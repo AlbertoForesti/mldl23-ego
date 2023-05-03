@@ -46,8 +46,10 @@ class EpicKitchensDataset(data.Dataset, ABC):
         else:
             pickle_name = split + "_test.pkl"
 
+        logger.info(f"Reading pickle at {os.path.join(self.dataset_conf.annotations_path, pickle_name)}")
         self.list_file = pd.read_pickle(os.path.join(self.dataset_conf.annotations_path, pickle_name))
         logger.info(f"Dataloader for {split}-{self.mode} with {len(self.list_file)} samples generated")
+        # logger.info(f"List of samples = {self.list_file}")
         self.video_list = [EpicVideoRecord(tup, self.dataset_conf) for tup in self.list_file.iterrows()]
         self.transform = transform  # pipeline of transforms
         self.load_feat = load_feat
@@ -76,18 +78,24 @@ class EpicKitchensDataset(data.Dataset, ABC):
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
          
-        tot_frames=len(record)
+        tot_frames=record.num_frames[modality]
         n_centroids=self.num_clips
-        n_frames=self.num_frames_per_clip
+        n_frames=self.num_frames_per_clip[modality]
         
         sub=[]
         for i in range(1,n_centroids+1):
             
             centr_pos=int(i*tot_frames/(n_centroids+1))
-            sub.append(range(centr_pos-(n_frames/2), centr_pos+(n_frames/2+1)))
+            sub.append(range(centr_pos-int(n_frames/2), centr_pos+int(n_frames/2)))
 
         #raise NotImplementedError("You should implement _get_val_indices")
-        return np.array(sub)
+
+        ret = np.array(sub).flatten()
+
+        if not ret.size == self.num_clips * n_frames:
+            raise UserWarning(f"Invalid number of frames: it is {ret.size}, should be {self.num_clips * n_frames}")
+        
+        return ret
         #raise NotImplementedError("You should implement _get_train_indices")
 
     def _get_val_indices(self, record, modality):
@@ -100,18 +108,21 @@ class EpicKitchensDataset(data.Dataset, ABC):
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
          
-        tot_frames=len(record)
+        tot_frames=record.num_frames[modality]
         n_centroids=self.num_clips
-        n_frames=self.num_frames_per_clip
+        n_frames=self.num_frames_per_clip[modality]
         
         sub=[]
         for i in range(1,n_centroids+1):
             
             centr_pos=int(i*tot_frames/(n_centroids+1))
-            sub.append(range(centr_pos-(n_frames/2), centr_pos+(n_frames/2+1)))
+            sub.append(range(centr_pos-int(n_frames/2), centr_pos+int(n_frames/2)))
 
+        ret = np.array(sub).flatten()
+        if not ret.size == self.num_clips * n_frames:
+            raise UserWarning(f"miao Invalid number of frames: it is {ret.size}, should be {self.num_clips * n_frames}")
         #raise NotImplementedError("You should implement _get_val_indices")
-        return np.array(sub)
+        return ret
        # raise NotImplementedError("You should implement _get_val_indices")
 
     def __getitem__(self, index):
