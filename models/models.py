@@ -18,10 +18,11 @@ class BaselineTA3N(nn.Module):
     )
 
     def __init__(self, num_classes=400, final_endpoint='Logits', name='inception_i3d',
-                 in_channels=3, model_config=None, backbone='i3d'):
+                 in_channels=3, model_config=None, backbone='i3d', train_segments = 5, val_segments = 25):
         
         self.end_points = {}
-        self.TRN = TRNmodule.RelationModule(feat_shared_dim, self.num_bottleneck, self.train_segments)
+        self.train_segments = train_segments
+        self.val_segments = val_segments
         end_point = 'Backbone'
         """
         this is a way to get the number of features at input
@@ -29,12 +30,12 @@ class BaselineTA3N(nn.Module):
         """
         self.end_points[end_point] = self.FeatureExtractorModule(model_config=model_config)
         backbone = self.end_points[end_point]
-        feat_dim = backbone.feat_dim
+        in_features_dim = backbone.feat_dim
         if self._final_endpoint == end_point:
             return
         
         end_point = 'Spatial module' # just a fully connected layer
-        fc_spatial_module = self.FullyConnectedLayer(feat_dim)
+        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim)
         std = 0.001
         constant_(fc_spatial_module.bias, 0)
         normal_(fc_spatial_module.weight, 0, std)
@@ -45,12 +46,13 @@ class BaselineTA3N(nn.Module):
             return
         
         end_point = 'Temporal module'
-        self.end_points[end_point] = self.TemporalModule()
+        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments)
+        in_features_dim = self.end_points[end_point].out_features_dim
         if self._final_endpoint == end_point:
             return
 
         end_point = 'Gy'
-        fc_gy = self.FullyConnectedLayer(feat_dim)
+        fc_gy = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim)
         constant_(fc_gy.bias, 0)
         normal_(fc_gy.weight, 0, std)
 
@@ -61,22 +63,28 @@ class BaselineTA3N(nn.Module):
 
         pass
 
-    def forward(self, x):
+
+    def forward(self, x, is_train=True):
+        num_segments = self.train_segments if is_train else self.val_segments
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
-                x = self._modules[end_point](x)  # use _modules to work with dataparallel
+                if end_point == 'Temporal module':
+                    x = self._modules[end_point](x, num_segments)  # use _modules to work with dataparallel    
+                else:
+                    x = self._modules[end_point](x)  # use _modules to work with dataparallel
         pass
 
     class FullyConnectedLayer(nn.Module):
-        def __init__(self, in_features, out_features = 1024, dropout=0.8):
+        def __init__(self, in_features_dim, out_features_dim, dropout=0.8):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
-            self.in_features = in_features
-            self.out_features = min(out_features, in_features)
+            self.in_features_dim = in_features_dim
+            self.out_features_dim = out_features_dim
+            
             """Here I am doing what is done in the official code, 
             in the first fc layer the output dimension is the minimum between the input feature dimension and 1024"""
             self.relu = nn.ReLU(inplace=True) # Again using the architecture of the official code
             self.droput = nn.Dropout(p=dropout)
-            self.fc = nn.Linear(self.in_features, self.out_features)
+            self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
         
         def forward(self, x):
             x = self.fc(x)
@@ -86,11 +94,14 @@ class BaselineTA3N(nn.Module):
 
 
     class TemporalModule(nn.Module):
-        def __init__(self, in_features_dim, temporal_pooling = 'TemPooling') -> None:
+        def __init__(self, in_features_dim, train_segments, temporal_pooling = 'TemPooling') -> None:
             super(BaselineTA3N.TemporalModule, self).__init__()
             self.pooling = None
+            self.pooling_type = temporal_pooling
             self.in_features_dim = in_features_dim
+            self.train_segments = train_segments
             if temporal_pooling == 'TemPooling':
+                self.out_features_dim = self.in_features_dim
                 pass
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
@@ -100,7 +111,9 @@ class BaselineTA3N(nn.Module):
             else:
                 raise NotImplementedError
         
-        def forward(self, x):
+        def forward(self, x, num_segments):
+            if self.pooling_type == 'TemRelation':
+                x = x.view((-1, num_segments) + x.size()[-1:])
             return self.pooling(x)
     
     class FeatureExtractorModule(nn.Module):
