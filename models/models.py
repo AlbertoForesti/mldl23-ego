@@ -106,17 +106,15 @@ class BaselineTA3N(nn.Module):
     class TemporalModule(nn.Module):
         def __init__(self, in_features_dim, train_segments, temporal_pooling = 'TemPooling') -> None:
             super(BaselineTA3N.TemporalModule, self).__init__()
-            self.pooling = None
             self.pooling_type = temporal_pooling
             self.in_features_dim = in_features_dim
-            self.train_segments = train_segments #mumber
+            self.train_segments = train_segments
             if temporal_pooling == 'TemPooling':
-                self.out_features_dim = self.in_features_dim #BOH
-                
+                self.out_features_dim = self.in_features_dim
                 pass
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
-                self.pooling = TRNmodule.RelationModule(in_features_dim, self.num_bottleneck, self.train_segments)
+                self.trn = TRNmodule.RelationModule(in_features_dim, self.num_bottleneck, self.train_segments)
                 self.out_features_dim = self.num_bottleneck
                 pass
             else:
@@ -125,6 +123,7 @@ class BaselineTA3N(nn.Module):
         def forward(self, x, num_segments):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
+                return self.trn(x)
             elif self.pooling_type =="TempPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
                 
