@@ -17,12 +17,13 @@ class BaselineTA3N(nn.Module):
         'Predictions',
     )
 
-    def __init__(self, num_classes=400, final_endpoint='Logits', name='inception_i3d',
+    def __init__(self,frame_aggregation="avg_pool", num_classes=400, final_endpoint='Logits', name='inception_i3d',
                  in_channels=3, model_config=None, backbone='i3d', train_segments = 5, val_segments = 25):
         
         self.end_points = {}
         self.train_segments = train_segments
         self.val_segments = val_segments
+        self.frame_aggregation=frame_aggregation
         end_point = 'Backbone'
         """
         this is a way to get the number of features at input
@@ -58,6 +59,15 @@ class BaselineTA3N(nn.Module):
 
         self.end_points[end_point] = fc_gy
         if self._final_endpoint == end_point:
+            
+            self.fc_classifier_video_verb = nn.Linear(in_dim_features, num_classes[0])
+            std = 0.001
+            normal_(self.fc_classifier_video_verb.weight, 0, std)
+            constant_(self.fc_classifier_video_verb.bias, 0)
+
+            self.fc_classifier_video_noun = nn.Linear(in_dim_features, num_classes[1])
+            normal_(self.fc_classifier_video_noun.weight, 0, std)
+            constant_(self.fc_classifier_video_noun.bias, 0)
             return
         #missing the final fully connected layer
 
@@ -132,3 +142,4 @@ class BaselineTA3N(nn.Module):
             features = features['feat']
             return features.view(-1, features.size()[-1]) 
 
+  
