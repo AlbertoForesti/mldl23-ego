@@ -17,7 +17,7 @@ class BaselineTA3N(nn.Module):
         'Predictions',
     )
 
-    def __init__(self,frame_aggregation="avg_pool", num_classes=400, final_endpoint='Logits', name='inception_i3d',
+    def __init__(self,frame_aggregation="TemPooling", num_classes=400, final_endpoint='Logits', name='inception_i3d',
                  in_channels=3, model_config=None, backbone='i3d', train_segments = 5, val_segments = 25):
         
         self.end_points = {}
@@ -109,9 +109,10 @@ class BaselineTA3N(nn.Module):
             self.pooling = None
             self.pooling_type = temporal_pooling
             self.in_features_dim = in_features_dim
-            self.train_segments = train_segments
+            self.train_segments = train_segments #mumber
             if temporal_pooling == 'TemPooling':
-                self.out_features_dim = self.in_features_dim
+                self.out_features_dim = self.in_features_dim #BOH
+                
                 pass
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
@@ -124,8 +125,14 @@ class BaselineTA3N(nn.Module):
         def forward(self, x, num_segments):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
-            return self.pooling(x)
-    
+            elif self.pooling_type =="TempPooling":
+                x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
+                
+
+                x = nn.AvgPool2d([num_segments, 1])(x)  # e.g. 16 x 1 x 1 x 512
+                x= x.squeeze(1).squeeze(1)  # e.g. 16 x 512
+                return x
+               
     class FeatureExtractorModule(nn.Module):
 
         VALID_BACKBONES = {
