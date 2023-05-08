@@ -1,9 +1,10 @@
+import models
 import torch.nn as nn
 from models.I3D import I3D
 from models.I3D import InceptionI3d
 from torch.nn.init import normal_, constant_
 from models import TRNmodule
-    
+
 class BaselineTA3N(nn.Module):
 
     VALID_ENDPOINTS = (
@@ -15,13 +16,12 @@ class BaselineTA3N(nn.Module):
         'Predictions',
     )
 
-    def __init__(self,frame_aggregation="TemPooling", num_classes=8, final_endpoint='Logits', name='inception_i3d',
-                 in_channels=3, model_config=None, backbone='i3d', train_segments = 5, val_segments = 25):
+    def __init__(self, num_classes, model_config):
         
         self.end_points = {}
-        self.train_segments = train_segments
-        self.val_segments = val_segments
-        self.frame_aggregation=frame_aggregation
+        self.train_segments = model_config.train_segments
+        self.val_segments = model_config.val_segments
+        self.frame_aggregation=model_config.frame_aggregation
         end_point = 'Backbone'
         """
         this is a way to get the number of features at input
