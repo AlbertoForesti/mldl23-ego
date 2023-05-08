@@ -49,7 +49,9 @@ models:
     lr: 0.01
     sgd_momentum: 0.9
     weight_decay: 1e-7
-    frame_aggregation: avg_pool
+    frame_aggregation: TemPooling
+    train_segments: 5
+    val_segments: 25
     backbone:
       model: I3D
       dropout: 0.5
