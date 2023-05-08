@@ -15,7 +15,7 @@ class BaselineTA3N(nn.Module):
         'Predictions',
     )
 
-    def __init__(self,frame_aggregation="TemPooling", num_classes=400, final_endpoint='Logits', name='inception_i3d',
+    def __init__(self,frame_aggregation="TemPooling", num_classes=8, final_endpoint='Logits', name='inception_i3d',
                  in_channels=3, model_config=None, backbone='i3d', train_segments = 5, val_segments = 25):
         
         self.end_points = {}
@@ -27,7 +27,7 @@ class BaselineTA3N(nn.Module):
         this is a way to get the number of features at input
         it is the number of features in input before the logits endpoint in I3D
         """
-        self.end_points[end_point] = self.FeatureExtractorModule(model_config=model_config)
+        self.end_points[end_point] = self.FeatureExtractorModule(model_config=model_config.backbone)
         backbone = self.end_points[end_point]
         in_features_dim = backbone.feat_dim
         if self._final_endpoint == end_point:
