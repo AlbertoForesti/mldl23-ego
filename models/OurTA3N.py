@@ -1,10 +1,8 @@
-import models
-import torch
 import torch.nn as nn
 from models.I3D import I3D
 from models.I3D import InceptionI3d
 from torch.nn.init import normal_, constant_
-import TRNmodule
+from models import TRNmodule
     
 class BaselineTA3N(nn.Module):
 
