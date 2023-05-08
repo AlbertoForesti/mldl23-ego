@@ -27,7 +27,7 @@ class BaselineTA3N(nn.Module):
         this is a way to get the number of features at input
         it is the number of features in input before the logits endpoint in I3D
         """
-        self.end_points[end_point] = self.FeatureExtractorModule(model_config=model_config.backbone)
+        self.end_points[end_point] = self.FeatureExtractorModule(num_class=num_classes, modality='RGB', model_config=model_config.backbone)
         backbone = self.end_points[end_point]
         in_features_dim = backbone.feat_dim
         if self._final_endpoint == end_point:
