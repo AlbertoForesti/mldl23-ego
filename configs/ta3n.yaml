@@ -52,6 +52,7 @@ models:
     frame_aggregation: TemPooling
     train_segments: 5
     val_segments: 25
+    final_endpoint: Logits
     backbone:
       model: I3D
       dropout: 0.5

@@ -22,6 +22,7 @@ class BaselineTA3N(nn.Module):
         self.train_segments = model_config.train_segments
         self.val_segments = model_config.val_segments
         self.frame_aggregation=model_config.frame_aggregation
+        self._final_endpoint = model_config.final_endpoint
         end_point = 'Backbone'
         """
         this is a way to get the number of features at input
@@ -56,7 +57,7 @@ class BaselineTA3N(nn.Module):
         normal_(fc_gy.weight, 0, std)
 
         self.end_points[end_point] = fc_gy
-        if self._final_endpoint == end_point:
+        if not self._final_endpoint == end_point:
             
             self.fc_classifier_video_verb = nn.Linear(in_features_dim, num_classes[0])
             std = 0.001
@@ -67,9 +68,8 @@ class BaselineTA3N(nn.Module):
             normal_(self.fc_classifier_video_noun.weight, 0, std)
             constant_(self.fc_classifier_video_noun.bias, 0)
             return
-        #missing the final fully connected layer
-
-        pass
+        else:
+            return
 
 
     def forward(self, x, is_train=True):
