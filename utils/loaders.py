@@ -77,30 +77,15 @@ class EpicKitchensDataset(data.Dataset, ABC):
         # Remember that the returned array should have size              #
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
-<<<<<<< HEAD
-        
-        tot_frames=self.num_frames_per_clip
-        n_centroids=5
-        n_frames=16
-=======
          
         tot_frames=record.num_frames[modality]
         n_centroids=self.num_clips
         n_frames=self.num_frames_per_clip[modality]
->>>>>>> e26b825b254a294cc42694af15f5364b0be4cc5f
         
         sub=[]
         for i in range(1,n_centroids+1):
             
             centr_pos=int(i*tot_frames/(n_centroids+1))
-<<<<<<< HEAD
-            sub.append(range(centr_pos-8, centr_pos+9))
-
-        #raise NotImplementedError("You should implement _get_val_indices")
-        return np.array(sub)
-
-        raise NotImplementedError("You should implement _get_train_indices")
-=======
             sub.append(range(centr_pos-int(n_frames/2), centr_pos+int(n_frames/2)))
 
         #raise NotImplementedError("You should implement _get_val_indices")
@@ -112,7 +97,6 @@ class EpicKitchensDataset(data.Dataset, ABC):
         
         return ret
         #raise NotImplementedError("You should implement _get_train_indices")
->>>>>>> e26b825b254a294cc42694af15f5364b0be4cc5f
 
     def _get_val_indices(self, record, modality):
         ##################################################################
@@ -123,27 +107,15 @@ class EpicKitchensDataset(data.Dataset, ABC):
         # Remember that the returned array should have size              #
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
-<<<<<<< HEAD
-        tot_frames=self.num_frames_per_clip
-        n_centroids=5
-        n_frames=16
-=======
          
         tot_frames=record.num_frames[modality]
         n_centroids=self.num_clips
         n_frames=self.num_frames_per_clip[modality]
->>>>>>> e26b825b254a294cc42694af15f5364b0be4cc5f
         
         sub=[]
         for i in range(1,n_centroids+1):
             
             centr_pos=int(i*tot_frames/(n_centroids+1))
-<<<<<<< HEAD
-            sub.append(range(centr_pos-8, centr_pos+9))
-
-        #raise NotImplementedError("You should implement _get_val_indices")
-        return np.array(sub)
-=======
             sub.append(range(centr_pos-int(n_frames/2), centr_pos+int(n_frames/2)))
 
         ret = np.array(sub).flatten()
@@ -152,7 +124,6 @@ class EpicKitchensDataset(data.Dataset, ABC):
         #raise NotImplementedError("You should implement _get_val_indices")
         return ret
        # raise NotImplementedError("You should implement _get_val_indices")
->>>>>>> e26b825b254a294cc42694af15f5364b0be4cc5f
 
     def __getitem__(self, index):
 
