@@ -125,7 +125,7 @@ class BaselineTA3N(nn.Module):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
                 return self.trn(x)
-            elif self.pooling_type =="TempPooling":
+            elif self.pooling_type =="TemPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
                 if x is None:
                     raise UserWarning('Reshape view no good')
