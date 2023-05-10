@@ -75,6 +75,8 @@ class BaselineTA3N(nn.Module):
             raise UserWarning('Forward: Cannot be None type')
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
+                if x is None:
+                    raise UserWarning(f'Forward {end_point}: Cannot be None type')
                 if end_point == 'Temporal module':
                     x = self._modules[end_point](x, num_segments)  # use _modules to work with dataparallel    
                 else:
