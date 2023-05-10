@@ -83,7 +83,7 @@ class BaselineTA3N(nn.Module):
                     x = self._modules[end_point](x, num_segments)  # use _modules to work with dataparallel    
                 else:
                     x = self._modules[end_point](x)  # use _modules to work with dataparallel
-        pass
+        return x
 
     class FullyConnectedLayer(nn.Module):
         def __init__(self, in_features_dim, out_features_dim, dropout=0.8):
