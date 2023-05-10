@@ -59,9 +59,14 @@ class BaselineTA3N(nn.Module):
             std = 0.001
             normal_(self.fc_classifier_video.weight, 0, std)
             constant_(self.fc_classifier_video.bias, 0)
-            return
-        else:
-            return
+            
+        self.build()
+        
+        
+
+    def build(self):
+        for k in self.end_points.keys():
+            self.add_module(k, self.end_points[k])
 
 
     def forward(self, x, is_train=True):
