@@ -127,11 +127,21 @@ class BaselineTA3N(nn.Module):
                 return self.trn(x)
             elif self.pooling_type =="TempPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
-                
+                if x is None:
+                    raise UserWarning('Reshape view no good')
 
                 x = nn.AvgPool2d([num_segments, 1])(x)  # e.g. 16 x 1 x 1 x 512
+
+                if x is None:
+                    raise UserWarning('avgpool2d no good')
+
                 x= x.squeeze(1).squeeze(1)  # e.g. 16 x 512
+                
+                if x is None:
+                    raise UserWarning('Reshape squeeze no good')
                 return x
+            else:
+                raise NotImplementedError
                
     class FeatureExtractorModule(nn.Module):
 
