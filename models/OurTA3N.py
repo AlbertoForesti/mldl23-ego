@@ -24,17 +24,12 @@ class BaselineTA3N(nn.Module):
         self.frame_aggregation=model_config.frame_aggregation
         self._final_endpoint = model_config.final_endpoint
         super(BaselineTA3N, self).__init__()
-        end_point = 'Backbone'
+        
         """
         this is a way to get the number of features at input
         it is the number of features in input before the logits endpoint in I3D
         """
-        self.end_points[end_point] = self.FeatureExtractorModule(num_class=num_classes, modality='RGB', model_config=model_config.backbone)
-        backbone = self.end_points[end_point]
-        in_features_dim = backbone.feat_dim
-        if self._final_endpoint == end_point:
-            return
-        
+       
         end_point = 'Spatial module' # just a fully connected layer
         fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim)
         std = 0.001
