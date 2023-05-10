@@ -42,7 +42,7 @@ class BaselineTA3N(nn.Module):
             return
         
         end_point = 'Temporal module'
-        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments)
+        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation)
         in_features_dim = self.end_points[end_point].out_features_dim
         if self._final_endpoint == end_point:
             return
