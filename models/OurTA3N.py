@@ -71,6 +71,8 @@ class BaselineTA3N(nn.Module):
 
     def forward(self, x, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
+        if x is None:
+            raise UserWarning('Forward: Cannot be None type')
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
                 if end_point == 'Temporal module':
