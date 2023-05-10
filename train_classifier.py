@@ -209,7 +209,7 @@ def validate(model, val_loader, device, it, num_classes):
 
             for m in modalities:
                 batch = data[m].shape[0]
-                logits[m] = torch.zeros((args.test.num_clips, batch, num_classes)).to(device)
+                logits[m] = torch.zeros((batch, num_classes)).to(device)
 
             
             for m in modalities:
@@ -218,9 +218,6 @@ def validate(model, val_loader, device, it, num_classes):
             output, _ = model(data)
             for m in modalities:
                 logits[m] = output[m]
-
-            for m in modalities:
-                logits[m] = torch.mean(logits[m], dim=0)
 
             model.compute_accuracy(logits, label)
 
