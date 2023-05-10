@@ -16,7 +16,7 @@ class BaselineTA3N(nn.Module):
         'Predictions',
     )
 
-    def __init__(self, num_classes, model_config):
+    def __init__(self, in_features_dim, num_classes, model_config):
         
         self.end_points = {}
         self.train_segments = model_config.train_segments
