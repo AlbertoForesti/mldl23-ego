@@ -55,10 +55,12 @@ class BaselineTA3N(nn.Module):
         self.end_points[end_point] = fc_gy
         if not self._final_endpoint == end_point:
             
-            self.fc_classifier_video = nn.Linear(in_features_dim, num_classes)
+            fc_classifier_video = nn.Linear(in_features_dim, num_classes)
             std = 0.001
-            normal_(self.fc_classifier_video.weight, 0, std)
-            constant_(self.fc_classifier_video.bias, 0)
+            normal_(fc_classifier_video.weight, 0, std)
+            constant_(fc_classifier_video.bias, 0)
+            end_point = 'Logits'
+            self.end_points[end_point] = fc_classifier_video
             
         self.build()
         
