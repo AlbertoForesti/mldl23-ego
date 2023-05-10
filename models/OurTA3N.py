@@ -53,15 +53,14 @@ class BaselineTA3N(nn.Module):
         normal_(fc_gy.weight, 0, std)
 
         self.end_points[end_point] = fc_gy
-        if not self._final_endpoint == end_point:
-            
-            fc_classifier_video = nn.Linear(in_features_dim, num_classes)
-            std = 0.001
-            normal_(fc_classifier_video.weight, 0, std)
-            constant_(fc_classifier_video.bias, 0)
-            end_point = 'Logits'
-            self.end_points[end_point] = fc_classifier_video
-            
+
+        end_point='Logits'
+
+        self.fc_classifier_video = nn.Linear(in_features_dim, num_classes)
+        std = 0.001
+        normal_(self.fc_classifier_video.weight, 0, std)
+        constant_(self.fc_classifier_video.bias, 0)
+
         self.build()
         
         
@@ -83,7 +82,8 @@ class BaselineTA3N(nn.Module):
                     x = self._modules[end_point](x, num_segments)  # use _modules to work with dataparallel    
                 else:
                     x = self._modules[end_point](x)  # use _modules to work with dataparallel
-        return x
+        logits = self.fc_classifier_video(x)
+        return logits, {"features": x}
 
     class FullyConnectedLayer(nn.Module):
         def __init__(self, in_features_dim, out_features_dim, dropout=0.8):
