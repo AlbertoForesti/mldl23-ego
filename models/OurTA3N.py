@@ -31,7 +31,7 @@ class BaselineTA3N(nn.Module):
         """
        
         end_point = 'Spatial module' # just a fully connected layer
-        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim)
+        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
         std = 0.001
         constant_(fc_spatial_module.bias, 0)
         normal_(fc_spatial_module.weight, 0, std)
@@ -48,7 +48,7 @@ class BaselineTA3N(nn.Module):
             return
 
         end_point = 'Gy'
-        fc_gy = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim)
+        fc_gy = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
         constant_(fc_gy.bias, 0)
         normal_(fc_gy.weight, 0, std)
 
@@ -117,7 +117,7 @@ class BaselineTA3N(nn.Module):
                 pass
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
-                self.trn = TRNmodule.RelationModule(in_features_dim, self.num_bottleneck, self.train_segments)
+                self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
                 self.out_features_dim = self.num_bottleneck
                 pass
             else:

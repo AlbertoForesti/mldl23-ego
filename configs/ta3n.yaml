@@ -48,6 +48,7 @@ models:
     kwargs: {}
     lr_steps: 3000
     lr: 0.01
+    dropout: 0.5
     sgd_momentum: 0.9
     weight_decay: 1e-7
     frame_aggregation: TemPooling
