@@ -42,6 +42,9 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
         # self.accuracy and self.loss track the evolution of the accuracy and the training loss
         self.accuracy = utils.Accuracy(topk=(1, 5), classes=num_classes)
         self.loss = utils.AverageMeter()
+        self.classification_loss  = utils.AverageMeter()
+        self.gsd_loss = utils.AverageMeter()
+        self.gtd_loss = utils.AverageMeter()
         
         self.num_clips = num_clips
 
@@ -82,6 +85,17 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
                 features[k][m] = feat[k]
 
         return logits, features
+    
+    def compute_loss_total(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor], domain_label: torch.Tensor, lambda_s: float=1.0, lambda_t: float=1.0):
+        classification_loss = self.criterion(logits, class_label)
+        gsd_loss = self.criterion(features['pred_gsd'], domain_label)
+        gtd_loss = self.criterion(features['pred_gtd'], domain_label)
+        # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
+        # we need different losses to backpropagate to different parts of the network
+        self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
+        self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
+        self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
+
 
     def compute_loss(self, logits: Dict[str, torch.Tensor], label: torch.Tensor, loss_weight: float=1.0):
         """Fuse the logits from different modalities and compute the classification loss.
@@ -96,7 +110,7 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
             weight of the classification loss, by default 1.0
         """
         fused_logits = reduce(lambda x, y: x + y, logits.values())
-        loss = self.criterion(fused_logits, label) / self.num_clips
+        loss = self.criterion(fused_logits, label) #Abbiamo lasciato questo(?)
         # Update the loss value, weighting it by the ratio of the batch size to the total 
         # batch size (for gradient accumulation)
         self.loss.update(torch.mean(loss_weight * loss) / (self.total_batch / self.batch_size), self.batch_size)
@@ -168,4 +182,7 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
         retain_graph : bool, optional
             whether the computational graph should be retained, by default False
         """
-        self.loss.val.backward(retain_graph=retain_graph)
+        # self.loss.val.backward(retain_graph=retain_graph)
+        self.gsd_loss.val.backward(retain_graph=retain_graph)
+        self.gtd_loss.val.backward(retain_graph=retain_graph)
+        self.classification_loss.val.backward(retain_graph=retain_graph)

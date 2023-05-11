@@ -1,6 +1,7 @@
 import models
 import torch
 import torch.nn as nn
+from torch.autograd import Function
 from models.I3D import I3D
 from models.I3D import InceptionI3d
 from torch.nn.init import normal_, constant_
@@ -24,6 +25,7 @@ class BaselineTA3N(nn.Module):
         self.val_segments = model_config.val_segments
         self.frame_aggregation=model_config.frame_aggregation
         self._final_endpoint = model_config.final_endpoint
+        self.model_config = model_config
         super(BaselineTA3N, self).__init__()
         
         """
@@ -42,9 +44,19 @@ class BaselineTA3N(nn.Module):
         if self._final_endpoint == end_point:
             return
         
+        end_point = 'Gsd'
+        self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
+        if self._final_endpoint == end_point:
+            return
+        
         end_point = 'Temporal module'
         self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation)
         in_features_dim = self.end_points[end_point].out_features_dim
+        if self._final_endpoint == end_point:
+            return
+        
+        end_point = 'Gtd'
+        self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
         if self._final_endpoint == end_point:
             return
 
@@ -71,6 +83,30 @@ class BaselineTA3N(nn.Module):
             self.add_module(k, self.end_points[k])
 
 
+    def forward_extended(self, source, target, is_train=True):
+        num_segments = self.train_segments if is_train else self.val_segments
+
+        if source is None or target is None:
+            raise UserWarning('Forward: Cannot be None type')
+        
+        source = self._modules['Spatial module'](source)
+        target = self._modules['Spatial module'](target)
+
+        predictions_gsd = self._modules['Gsd'](source) # to concat
+        predictions_gsd = self._modules['Gsd'](target)
+
+        source = self._modules['Temporal module'](source, num_segments)
+        target = self._modules['Temporal module'](target, num_segments)
+
+        predictions_gtd = self._modules['Gtd'](source)
+        predictions_gtd = self._modules['Gtd'](target) # to concat
+
+        source = self._modules['Gy'](source)
+
+        logits = self.fc_classifier_video(source)
+        
+        return logits, {"pred_gsd": predictions_gsd, "pred_gtd": predictions_gtd}
+    
     def forward(self, x, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
         if x is None:
@@ -163,4 +199,36 @@ class BaselineTA3N(nn.Module):
             features = features['feat']
             return features.view(-1, features.size()[-1]) 
 
-  
+
+    class GradReverse(Function):
+        @staticmethod
+        def forward(ctx, x, beta):
+            ctx.beta = beta
+            return x.view_as(x)
+
+        @staticmethod
+        def backward(ctx, grad_output):
+            grad_input = grad_output.neg() * ctx.beta
+            return grad_input, None
+    class DomainClassifier(nn.Module):
+
+        def __init__(self, in_features_dim, beta):
+            super(BaselineTA3N.DomainClassifier, self).__init__()
+            self.in_features_dim = in_features_dim
+            self.relu = nn.ReLU(inplace=True) # Again using the architecture of the official code
+            self.fc_feature_domain = nn.Linear(self.in_features_dim, self.in_features_dim)
+            self.fc_classifier_domain = nn.Linear(self.in_features_dim, 2)
+            self.beta = beta
+
+            self.bias_fc_feature_domain = self.fc_feature_domain.bias
+            self.weight_fc_feature_domain = self.fc_feature_domain.weight
+
+            self.bias_fc_classifier_domain = self.fc_classifier_domain.bias
+            self.weight_fc_classifier_domain = self.fc_classifier_domain.weight
+        
+        def forward(self, x):
+            x = BaselineTA3N.GradReverse.apply(x,self.beta)
+            x = self.fc_classifier_domain(x)
+            x = self.relu(x)
+            x = self.fc_classifier_domain(x)
+            return x
