@@ -1,4 +1,5 @@
 import models
+import torch
 import torch.nn as nn
 from models.I3D import I3D
 from models.I3D import InceptionI3d
@@ -126,7 +127,8 @@ class BaselineTA3N(nn.Module):
         def forward(self, x, num_segments):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
-                return self.trn(x)
+                x = self.trn(x)
+                return torch.sum(x, 1)
             elif self.pooling_type =="TemPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
                 if x is None:
