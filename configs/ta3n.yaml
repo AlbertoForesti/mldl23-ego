@@ -55,16 +55,6 @@ models:
     train_segments: 5
     val_segments: 25
     final_endpoint: Logits
-    backbone:
-      model: I3D
-      dropout: 0.5
-      normalize: False
-      resolution: 224
-      kwargs: {}
-      lr_steps: 3000
-      lr: 0.01
-      sgd_momentum: 0.9
-      weight_decay: 1e-7
-      weight_i3d_rgb: './pretrained_i3d/rgb_imagenet.pt'
-    
-    
+    n_fcl: 2
+    blocks: []
+

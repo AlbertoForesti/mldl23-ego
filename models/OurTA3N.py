@@ -2,8 +2,7 @@ import models
 import torch
 import torch.nn as nn
 from torch.autograd import Function
-from models.I3D import I3D
-from models.I3D import InceptionI3d
+
 from torch.nn.init import normal_, constant_
 from models import TRNmodule
 
@@ -26,8 +25,7 @@ class BaselineTA3N(nn.Module):
         self.frame_aggregation=model_config.frame_aggregation
         self._final_endpoint = model_config.final_endpoint
         self.model_config = model_config
-        super(BaselineTA3N, self).__init__()
-        
+        super(BaselineTA3N, self).__init__()        
         """
         this is a way to get the number of features at input
         it is the number of features in input before the logits endpoint in I3D
@@ -45,9 +43,10 @@ class BaselineTA3N(nn.Module):
             return
         
         end_point = 'Gsd'
-        self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
-        if self._final_endpoint == end_point:
-            return
+        if end_point in self.model_config.blocks:
+            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
+            if self._final_endpoint == end_point:
+                return
         
         end_point = 'Temporal module'
         self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation)
@@ -56,10 +55,11 @@ class BaselineTA3N(nn.Module):
             return
         
         end_point = 'Gtd'
-        self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
-        if self._final_endpoint == end_point:
-            return
-
+        if end_point in self.model_config.blocks:
+            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
+            if self._final_endpoint == end_point:
+                return
+        
         end_point = 'Gy'
         fc_gy = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
         constant_(fc_gy.bias, 0)
@@ -83,7 +83,7 @@ class BaselineTA3N(nn.Module):
             self.add_module(k, self.end_points[k])
 
 
-    def forward_extended(self, source, target, is_train=True):
+    def forward(self, source, target, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
 
         if source is None or target is None:
@@ -93,39 +93,40 @@ class BaselineTA3N(nn.Module):
         target = self._modules['Spatial module'](target)
         
         if 'Gsd' in self.end_points:
-            predictions_gsd = self._modules['Gsd'](source) # to concat
-            predictions_gsd = self._modules['Gsd'](target)
-            torch.cat()
+            predictions_gsd_source = self._modules['Gsd'](source) # to concat
+            predictions_gsd_target = self._modules['Gsd'](target)
+            
 
         source = self._modules['Temporal module'](source, num_segments)
         target = self._modules['Temporal module'](target, num_segments)
-
-        predictions_gtd = self._modules['Gtd'](source)
-        predictions_gtd = self._modules['Gtd'](target) # to concat
-
+        if 'Gtd' in self.end_points:
+            predictions_gtd_source = self._modules['Gtd'](source) # to concat
+            predictions_gtd_target = self._modules['Gtd'](target)
+            
         source = self._modules['Gy'](source)
 
         logits = self.fc_classifier_video(source)
         
-        return logits, {"pred_gsd": predictions_gsd, "pred_gtd": predictions_gtd}
+        return logits, {"pred_gsd_source": predictions_gsd_source,"pred_gsd_target": predictions_gsd_target, \
+                        "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target}
     
-    def forward(self, x, is_train=True):
-        num_segments = self.train_segments if is_train else self.val_segments
-        if x is None:
-            raise UserWarning('Forward: Cannot be None type')
-        for end_point in self.VALID_ENDPOINTS:
-            if end_point in self.end_points:
-                if x is None:
-                    raise UserWarning(f'Forward {end_point}: Cannot be None type')
-                if end_point == 'Temporal module':
-                    x = self._modules[end_point](x, num_segments)  # use _modules to work with dataparallel    
-                else:
-                    x = self._modules[end_point](x)  # use _modules to work with dataparallel
-        logits = self.fc_classifier_video(x)
-        return logits, {"features": x}
+   
+    class SpatialModule(nn.Module):
+        def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
+            self.fc_layers = []
+            super(BaselineTA3N.SpatialModule, self).__init__()
+            self.fc_layers.append(BaselineTA3N.FullyConnectedLayer(in_features_dim, out_features_dim, dropout))
+            for i in range(n_fcl-1):
+                self.fc_layers.append(BaselineTA3N.FullyConnectedLayer(out_features_dim, out_features_dim, dropout))
+        
+        def forward(self, x):
+            for i in range(len(self.fc_layers)):
+                x = self.fc_layers[i](x)
+            return x
+
 
     class FullyConnectedLayer(nn.Module):
-        def __init__(self, in_features_dim, out_features_dim, dropout=0.8):
+        def __init__(self, in_features_dim, out_features_dim, dropout=0.5):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
             self.in_features_dim = in_features_dim
             self.out_features_dim = out_features_dim
@@ -185,22 +186,7 @@ class BaselineTA3N(nn.Module):
             else:
                 raise NotImplementedError
                
-    class FeatureExtractorModule(nn.Module):
-
-        VALID_BACKBONES = {
-            'i3d': I3D
-        }
-
-        def __init__(self, num_class, modality, model_config, **kwargs):
-            super(BaselineTA3N.FeatureExtractorModule, self).__init__()
-            self.backbone = I3D(num_class, modality, model_config, **kwargs)
-            self.feat_dim = self.backbone.feat_dim
-        
-        def forward(self, x):
-            logits, features = self.backbone(x)
-            features = features['feat']
-            return features.view(-1, features.size()[-1]) 
-
+    
 
     class GradReverse(Function):
         @staticmethod
@@ -212,9 +198,13 @@ class BaselineTA3N(nn.Module):
         def backward(ctx, grad_output):
             grad_input = grad_output.neg() * ctx.beta
             return grad_input, None
+    
     class DomainClassifier(nn.Module):
 
         def __init__(self, in_features_dim, beta):
+
+            std = 0.001
+
             super(BaselineTA3N.DomainClassifier, self).__init__()
             self.in_features_dim = in_features_dim
             self.relu = nn.ReLU(inplace=True) # Again using the architecture of the official code
@@ -227,7 +217,13 @@ class BaselineTA3N(nn.Module):
 
             self.bias_fc_classifier_domain = self.fc_classifier_domain.bias
             self.weight_fc_classifier_domain = self.fc_classifier_domain.weight
-        
+
+            constant_(self.bias_fc_feature_domain, 0)
+            normal_(self.weight_fc_feature_domain, 0, std)
+
+            constant_(self.bias_fc_classifier_domain, 0)
+            normal_(self.weight_fc_classifier_domain, 0, std)
+                    
         def forward(self, x):
             x = BaselineTA3N.GradReverse.apply(x,self.beta)
             x = self.fc_classifier_domain(x)

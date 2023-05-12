@@ -41,7 +41,7 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
 
         # self.accuracy and self.loss track the evolution of the accuracy and the training loss
         self.accuracy = utils.Accuracy(topk=(1, 5), classes=num_classes)
-        self.loss = utils.AverageMeter()
+        
         self.classification_loss  = utils.AverageMeter()
         self.gsd_loss = utils.AverageMeter()
         self.gtd_loss = utils.AverageMeter()
@@ -86,10 +86,28 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
 
         return logits, features
     
-    def compute_loss_total(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor], domain_label: torch.Tensor):
-        classification_loss = self.criterion(logits, class_label)
-        gsd_loss = self.criterion(features['pred_gsd'], domain_label)
-        gtd_loss = self.criterion(features['pred_gtd'], domain_label)
+    def compute_loss(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor]):
+        classification_loss = self.criterion(logits, class_label) #cross entropy loss
+
+        pred_gsd_source = features['pred_gsd_source']
+        domain_label_source=torch.zeros(pred_gsd_source.shape[0])
+
+        pred_gsd_target = features['pred_gsd_target']
+        domain_label_target=torch.ones(pred_gsd_target.shape[0])
+
+        domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
+        pred_gsd_all=torch.cat((pred_gsd_source,pred_gsd_target ),0)
+
+        
+        pred_gtd_source = features['pred_gtd_source']
+        
+        pred_gtd_target = features['pred_gtd_target']
+        
+        
+        pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target ),0)
+        
+        gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
+        gtd_loss = self.criterion(pred_gtd_all, domain_label_all)
         # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
         # we need different losses to backpropagate to different parts of the network
         self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
@@ -97,24 +115,7 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
         self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
 
-    def compute_loss(self, logits: Dict[str, torch.Tensor], label: torch.Tensor, loss_weight: float=1.0):
-        """Fuse the logits from different modalities and compute the classification loss.
-
-        Parameters
-        ----------
-        logits : Dict[str, torch.Tensor]
-            logits of the different modalities
-        label : torch.Tensor
-            ground truth
-        loss_weight : float, optional
-            weight of the classification loss, by default 1.0
-        """
-        fused_logits = reduce(lambda x, y: x + y, logits.values())
-        loss = self.criterion(fused_logits, label) #Abbiamo lasciato questo(?)
-        # Update the loss value, weighting it by the ratio of the batch size to the total 
-        # batch size (for gradient accumulation)
-        self.loss.update(torch.mean(loss_weight * loss) / (self.total_batch / self.batch_size), self.batch_size)
-
+    
     def compute_accuracy(self, logits: Dict[str, torch.Tensor], label: torch.Tensor):
         """Fuse the logits from different modalities and compute the classification accuracy.
 
@@ -155,7 +156,9 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
 
         This method must be called after each optimization step.
         """
-        self.loss.reset()
+        self.gsd_loss.reset()
+        self.gtd_loss.reset()
+        self.classification_loss.reset()
 
     def reset_acc(self):
         """Reset the classification accuracy."""

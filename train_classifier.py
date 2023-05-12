@@ -155,8 +155,14 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
 
         if data is None:
             raise UserWarning('train_classifier: Cannot be None type')
-        logits, _ = action_classifier.forward(data)
-        action_classifier.compute_loss(logits, source_label, loss_weight=1)
+        logits, tmp = action_classifier.forward(data)
+
+        features = {}
+        for k, v in tmp.items():
+            # features[k] = torch.mean(v.values())
+            features[k] = v['RGB']
+
+        action_classifier.compute_loss(logits, source_label, features)
         action_classifier.backward(retain_graph=False)
         action_classifier.compute_accuracy(logits, source_label)
 
