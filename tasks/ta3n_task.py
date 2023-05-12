@@ -86,7 +86,7 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
 
         return logits, features
     
-    def compute_loss_total(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor], domain_label: torch.Tensor, lambda_s: float=1.0, lambda_t: float=1.0):
+    def compute_loss_total(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor], domain_label: torch.Tensor):
         classification_loss = self.criterion(logits, class_label)
         gsd_loss = self.criterion(features['pred_gsd'], domain_label)
         gtd_loss = self.criterion(features['pred_gtd'], domain_label)

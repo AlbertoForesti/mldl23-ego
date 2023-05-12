@@ -91,9 +91,11 @@ class BaselineTA3N(nn.Module):
         
         source = self._modules['Spatial module'](source)
         target = self._modules['Spatial module'](target)
-
-        predictions_gsd = self._modules['Gsd'](source) # to concat
-        predictions_gsd = self._modules['Gsd'](target)
+        
+        if 'Gsd' in self.end_points:
+            predictions_gsd = self._modules['Gsd'](source) # to concat
+            predictions_gsd = self._modules['Gsd'](target)
+            torch.cat()
 
         source = self._modules['Temporal module'](source, num_segments)
         target = self._modules['Temporal module'](target, num_segments)
