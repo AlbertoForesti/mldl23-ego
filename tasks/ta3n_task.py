@@ -90,7 +90,7 @@ class ActionRecognition(tasks.Task, ABC):
     def compute_loss(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor]):
         classification_loss = self.criterion(logits, class_label) #cross entropy loss
 
-        if 'Gsd' in self.model_args.blocks:
+        if 'Gsd' in self.model_args['RGB'].blocks:
             pred_gsd_source = features['pred_gsd_source']
             domain_label_source=torch.zeros(pred_gsd_source.shape[0])    
             
@@ -103,7 +103,7 @@ class ActionRecognition(tasks.Task, ABC):
             gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
             self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
 
-        if 'Gtd' in self.model_args.blocks:
+        if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
             domain_label_source=torch.zeros(pred_gtd_source.shape[0])
         
@@ -164,10 +164,10 @@ class ActionRecognition(tasks.Task, ABC):
 
         This method must be called after each optimization step.
         """
-        if 'Gsd' in self.model_args.blocks:
+        if 'Gsd' in self.model_args['RGB'].blocks:
             self.gsd_loss.reset()
         
-        if 'Gtd' in self.model_args.blocks:
+        if 'Gtd' in self.model_args['RGB'].blocks:
             self.gtd_loss.reset()
         
         self.classification_loss.reset()
@@ -198,10 +198,10 @@ class ActionRecognition(tasks.Task, ABC):
             whether the computational graph should be retained, by default False
         """
         # self.loss.val.backward(retain_graph=retain_graph)
-        if 'Gsd' in self.model_args.blocks:
+        if 'Gsd' in self.model_args['RGB'].blocks:
             self.gsd_loss.val.backward(retain_graph=retain_graph)
         
-        if 'Gtd' in self.model_args.blocks:
+        if 'Gtd' in self.model_args['RGB'].blocks:
             self.gtd_loss.val.backward(retain_graph=retain_graph)
         
         self.classification_loss.val.backward(retain_graph=retain_graph)
