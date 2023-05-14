@@ -86,9 +86,6 @@ class BaselineTA3N(nn.Module):
 
     def forward(self, source, target=None, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
-
-        if source is None or target is None:
-            raise UserWarning('Forward: Cannot be None type')
         
         source = self._modules['Spatial module'](source)
 
@@ -105,7 +102,7 @@ class BaselineTA3N(nn.Module):
             
 
         source = self._modules['Temporal module'](source, num_segments)
-        
+
         if is_train:
             target = self._modules['Temporal module'](target, num_segments)
         
