@@ -9,7 +9,7 @@ from utils.logger import logger
 from typing import Dict, Tuple
 
 
-class ActionRecognitionTA3N(tasks.Task, ABC):
+class ActionRecognition(tasks.Task, ABC):
     """Action recognition model."""
     
     def __init__(self, name: str, task_models: Dict[str, torch.nn.Module], batch_size: int, 
