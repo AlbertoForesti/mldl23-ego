@@ -136,7 +136,7 @@ class ActionRecognition(tasks.Task, ABC):
         """
         # fused_logits = reduce(lambda x, y: x + y, logits.values())
 
-        self.accuracy.update(logits['RGB'], label)
+        self.accuracy.update(logits, label)
 
     def wandb_log(self):
         """Log the current loss and top1/top5 accuracies to wandb."""
