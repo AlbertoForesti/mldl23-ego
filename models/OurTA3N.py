@@ -5,6 +5,7 @@ from torch.autograd import Function
 
 from torch.nn.init import normal_, constant_
 from models import TRNmodule
+from collections import OrderedDict
 
 class BaselineTA3N(nn.Module):
 
@@ -113,16 +114,27 @@ class BaselineTA3N(nn.Module):
    
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
-            self.fc_layers = []
+            
             super(BaselineTA3N.SpatialModule, self).__init__()
-            self.fc_layers.append(BaselineTA3N.FullyConnectedLayer(in_features_dim, out_features_dim, dropout))
+            
+            fc_layers = []
+            fc_layers.append(BaselineTA3N.FullyConnectedLayer(in_features_dim, out_features_dim, dropout))
+
             for i in range(n_fcl-1):
-                self.fc_layers.append(BaselineTA3N.FullyConnectedLayer(out_features_dim, out_features_dim, dropout))
+                fc_layers.append(BaselineTA3N.FullyConnectedLayer(out_features_dim, out_features_dim, dropout))
+            
+            self.fc_layers = nn.Sequential(fc_layers)
+            
+            self.bias = self.fc_layers.bias
+            self.weight = self.fc_layers.weight
+
+            std = 0.001
+            normal_(self.weight, 0, std)
+            constant_(self.bias, 0)
         
         def forward(self, x):
-            for i in range(len(self.fc_layers)):
-                x = self.fc_layers[i](x)
-            return x
+            return self.fc_layers(x)
+            
 
 
     class FullyConnectedLayer(nn.Module):
@@ -207,26 +219,20 @@ class BaselineTA3N(nn.Module):
 
             super(BaselineTA3N.DomainClassifier, self).__init__()
             self.in_features_dim = in_features_dim
-            self.relu = nn.ReLU(inplace=True) # Again using the architecture of the official code
-            self.fc_feature_domain = nn.Linear(self.in_features_dim, self.in_features_dim)
-            self.fc_classifier_domain = nn.Linear(self.in_features_dim, 2)
+            self.domain_classifier = nn.Sequential(OrderedDict([
+                ('relu1', nn.ReLU(inplace=True)),
+                ('linear1', nn.Linear(self.in_features_dim, self.in_features_dim))
+                ('linear2', nn.Linear(self.in_features_dim, 2))
+            ]))
             self.beta = beta
 
-            self.bias_fc_feature_domain = self.fc_feature_domain.bias
-            self.weight_fc_feature_domain = self.fc_feature_domain.weight
+            self.bias = self.domain_classifier.bias
+            self.weight = self.domain_classifier.weight
 
-            self.bias_fc_classifier_domain = self.fc_classifier_domain.bias
-            self.weight_fc_classifier_domain = self.fc_classifier_domain.weight
-
-            constant_(self.bias_fc_feature_domain, 0)
-            normal_(self.weight_fc_feature_domain, 0, std)
-
-            constant_(self.bias_fc_classifier_domain, 0)
-            normal_(self.weight_fc_classifier_domain, 0, std)
+            constant_(self.bias, 0)
+            normal_(self.weight, 0, std)
                     
         def forward(self, x):
             x = BaselineTA3N.GradReverse.apply(x,self.beta)
-            x = self.fc_classifier_domain(x)
-            x = self.relu(x)
-            x = self.fc_classifier_domain(x)
+            x = self.domain_classifier(x)
             return x
