@@ -96,6 +96,10 @@ class BaselineTA3N(nn.Module):
         if 'Gsd' in self.end_points:
             predictions_gsd_source = self._modules['Gsd'](source) # to concat
             predictions_gsd_target = self._modules['Gsd'](target)
+        else:
+            predictions_gsd_source = None
+            predictions_gsd_target = None
+
             
 
         source = self._modules['Temporal module'](source, num_segments)
@@ -103,6 +107,9 @@ class BaselineTA3N(nn.Module):
         if 'Gtd' in self.end_points:
             predictions_gtd_source = self._modules['Gtd'](source) # to concat
             predictions_gtd_target = self._modules['Gtd'](target)
+        else:
+            predictions_gtd_source = None
+            predictions_gtd_target = None
             
         source = self._modules['Gy'](source)
 

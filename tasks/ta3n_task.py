@@ -104,13 +104,13 @@ class ActionRecognition(tasks.Task, ABC):
         
         pred_gtd_target = features['pred_gtd_target']
         
+        pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target),0)
         
-        pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target ),0)
-        
-        gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
-        gtd_loss = self.criterion(pred_gtd_all, domain_label_all)
+        gsd_loss = self.criterion(pred_gsd_all, domain_label_all) if pred_gsd_all is not None else 0
+        gtd_loss = self.criterion(pred_gtd_all, domain_label_all) if pred_gtd_all is not None else 0
         # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
         # we need different losses to backpropagate to different parts of the network
+        
         self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
         self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
         self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
