@@ -240,7 +240,7 @@ def validate(model, val_loader, device, it, num_classes):
             for m in modalities:
                 data[m] = data[m].to(device)
 
-            output, _ = model(data)
+            output, _ = model(data, is_train=False)
             for m in modalities:
                 logits[m] = output[m]
 

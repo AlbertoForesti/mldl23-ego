@@ -84,16 +84,18 @@ class BaselineTA3N(nn.Module):
             self.add_module(k, self.end_points[k])
 
 
-    def forward(self, source, target, is_train=True):
+    def forward(self, source, target=None, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
 
         if source is None or target is None:
             raise UserWarning('Forward: Cannot be None type')
         
         source = self._modules['Spatial module'](source)
-        target = self._modules['Spatial module'](target)
+
+        if is_train:
+            target = self._modules['Spatial module'](target)
         
-        if 'Gsd' in self.end_points:
+        if 'Gsd' in self.end_points and is_train:
             predictions_gsd_source = self._modules['Gsd'](source) # to concat
             predictions_gsd_target = self._modules['Gsd'](target)
         else:
@@ -103,8 +105,11 @@ class BaselineTA3N(nn.Module):
             
 
         source = self._modules['Temporal module'](source, num_segments)
-        target = self._modules['Temporal module'](target, num_segments)
-        if 'Gtd' in self.end_points:
+        
+        if is_train:
+            target = self._modules['Temporal module'](target, num_segments)
+        
+        if 'Gtd' in self.end_points and is_train:
             predictions_gtd_source = self._modules['Gtd'](source) # to concat
             predictions_gtd_target = self._modules['Gtd'](target)
         else:
