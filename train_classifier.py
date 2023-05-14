@@ -75,18 +75,22 @@ def main():
         # notice, here it is multiplied by tot_batch/batch_size since gradient accumulation technique is adopted
         training_iterations = args.train.num_iter * (args.total_batch // args.batch_size)
         # all dataloaders are generated here
-        train_loader = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
+        train_loader_source = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
                                                                        'train', args.dataset, None, None, None,
                                                                        None, load_feat=True),
                                                    batch_size=args.batch_size, shuffle=True,
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
-
+        train_loader_target = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[-1], modalities,
+                                                                       'train', args.dataset, None, None, None,
+                                                                       None, load_feat=True),
+                                                   batch_size=args.batch_size, shuffle=True,
+                                                   num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
         val_loader = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[-1], modalities,
                                                                      'val', args.dataset, None, None, None,
                                                                      None, load_feat=True),
                                                  batch_size=args.batch_size, shuffle=False,
                                                  num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
-        train(action_classifier, train_loader, val_loader, device, num_classes)
+        train(action_classifier, train_loader_source,train_loader_target, val_loader, device, num_classes)
 
     elif args.action == "validate":
         if args.resume_from is not None:
@@ -100,7 +104,7 @@ def main():
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
 
 
-def train(action_classifier, train_loader, val_loader, device, num_classes):
+def train(action_classifier, train_loader_source, train_loader_target, val_loader, device, num_classes):
     """
     function to train the model on the test set
     action_classifier: Task containing the model to be trained
@@ -111,7 +115,8 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
     """
     global training_iterations, modalities
 
-    data_loader_source = iter(train_loader)
+    data_loader_source = iter(train_loader_source)
+    data_loader_target = iter(train_loader_source)
     action_classifier.train(True)
     action_classifier.zero_grad()
     iteration = action_classifier.current_iter * (args.total_batch // args.batch_size)
@@ -136,9 +141,17 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
         # to redefine the iterator
         try:
             source_data, source_label = next(data_loader_source)
+            
         except StopIteration:
-            data_loader_source = iter(train_loader)
+            data_loader_source = iter(train_loader_source)
             source_data, source_label = next(data_loader_source)
+        
+        try:
+            target_data, target_label = next(data_loader_target)
+            
+        except StopIteration:
+            data_loader_target= iter(train_loader_target)
+            target_data, target_label = next(data_loader_target)
         end_t = datetime.now()
 
         logger.info(f"Iteration {i}/{training_iterations} batch retrieved! Elapsed time = "
@@ -146,16 +159,20 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
 
         ''' Action recognition'''
         source_label = source_label.to(device)
-        data = {}
+        target_label=target_label.to(device)
+        data_source= {}
+        data_target= {}
 
         
         # in case of multi-clip training one clip per time is processed
         for m in modalities:
-            data[m] = source_data[m].to(device)
+            data_source[m] = source_data[m].to(device)
+            data_target[m]=target_data[m].to(device)
 
-        if data is None:
+
+        if data_source is None or data_target is None :
             raise UserWarning('train_classifier: Cannot be None type')
-        logits, tmp = action_classifier.forward(data)
+        logits, tmp = action_classifier.forward(data_source, data_target)
 
         features = {}
         for k, v in tmp.items():
