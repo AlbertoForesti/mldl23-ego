@@ -188,7 +188,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
         # update weights and zero gradients if total_batch samples are passed
         if gradient_accumulation_step:
             logger.info("[%d/%d]\tlast Verb loss: %.4f\tMean verb loss: %.4f\tAcc@1: %.2f%%\tAccMean@1: %.2f%%" %
-                        (real_iter, args.train.num_iter, action_classifier.loss.val, action_classifier.loss.avg,
+                        (real_iter, args.train.num_iter, action_classifier.classification_loss.val, action_classifier.classification_loss.avg,
                          action_classifier.accuracy.val[1], action_classifier.accuracy.avg[1]))
 
             action_classifier.check_grad()
