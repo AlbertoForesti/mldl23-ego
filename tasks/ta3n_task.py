@@ -78,7 +78,7 @@ class ActionRecognitionTA3N(tasks.Task, ABC):
         logits = {}
         features = {}
         for i_m, m in enumerate(self.modalities):
-            logits[m], feat = self.task_models[m](x=data[m], **kwargs)
+            logits[m], feat = self.task_models[m](data_source[m], data_target[m],**kwargs)
             if i_m == 0:
                 for k in feat.keys():
                     features[k] = {}
