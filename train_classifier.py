@@ -178,6 +178,8 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
         for k, v in tmp.items():
             # features[k] = torch.mean(v.values())
             features[k] = v['RGB']
+        
+        logits = logits['RGB']
 
         action_classifier.compute_loss(logits, source_label, features)
         action_classifier.backward(retain_graph=False)
