@@ -90,29 +90,36 @@ class ActionRecognition(tasks.Task, ABC):
     def compute_loss(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor]):
         classification_loss = self.criterion(logits, class_label) #cross entropy loss
 
-        pred_gsd_source = features['pred_gsd_source']
-        domain_label_source=torch.zeros(pred_gsd_source.shape[0])
+        if 'Gsd' in self.model_args.blocks:
+            pred_gsd_source = features['pred_gsd_source']
+            domain_label_source=torch.zeros(pred_gsd_source.shape[0])    
+            
+            pred_gsd_target = features['pred_gsd_target']
+            domain_label_target=torch.ones(pred_gsd_target.shape[0])
 
-        pred_gsd_target = features['pred_gsd_target']
-        domain_label_target=torch.ones(pred_gsd_target.shape[0])
+            domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
+            pred_gsd_all=torch.cat((pred_gsd_source,pred_gsd_target ),0)
 
-        domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
-        pred_gsd_all=torch.cat((pred_gsd_source,pred_gsd_target ),0)
+            gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
+            self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
 
+        if 'Gtd' in self.model_args.blocks:
+            pred_gtd_source = features['pred_gtd_source']
+            domain_label_source=torch.zeros(pred_gtd_source.shape[0])
         
-        pred_gtd_source = features['pred_gtd_source']
+            pred_gtd_target = features['pred_gtd_target']
+            domain_label_target=torch.ones(pred_gtd_target.shape[0])
+            
+            domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
+            pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target),0)
+
+            gtd_loss = self.criterion(pred_gtd_all, domain_label_all)
+            self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
         
-        pred_gtd_target = features['pred_gtd_target']
         
-        pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target),0)
-        
-        gsd_loss = self.criterion(pred_gsd_all, domain_label_all) if pred_gsd_all is not None else 0
-        gtd_loss = self.criterion(pred_gtd_all, domain_label_all) if pred_gtd_all is not None else 0
         # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
         # we need different losses to backpropagate to different parts of the network
         
-        self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
-        self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
         self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
 
@@ -157,8 +164,12 @@ class ActionRecognition(tasks.Task, ABC):
 
         This method must be called after each optimization step.
         """
-        self.gsd_loss.reset()
-        self.gtd_loss.reset()
+        if 'Gsd' in self.model_args.blocks:
+            self.gsd_loss.reset()
+        
+        if 'Gtd' in self.model_args.blocks:
+            self.gtd_loss.reset()
+        
         self.classification_loss.reset()
 
     def reset_acc(self):
@@ -187,6 +198,10 @@ class ActionRecognition(tasks.Task, ABC):
             whether the computational graph should be retained, by default False
         """
         # self.loss.val.backward(retain_graph=retain_graph)
-        self.gsd_loss.val.backward(retain_graph=retain_graph)
-        self.gtd_loss.val.backward(retain_graph=retain_graph)
+        if 'Gsd' in self.model_args.blocks:
+            self.gsd_loss.val.backward(retain_graph=retain_graph)
+        
+        if 'Gtd' in self.model_args.blocks:
+            self.gtd_loss.val.backward(retain_graph=retain_graph)
+        
         self.classification_loss.val.backward(retain_graph=retain_graph)
