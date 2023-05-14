@@ -134,8 +134,9 @@ class ActionRecognition(tasks.Task, ABC):
         label : torch.Tensor
             ground truth
         """
-        fused_logits = reduce(lambda x, y: x + y, logits.values())
-        self.accuracy.update(fused_logits, label)
+        # fused_logits = reduce(lambda x, y: x + y, logits.values())
+
+        self.accuracy.update(logits['RGB'], label)
 
     def wandb_log(self):
         """Log the current loss and top1/top5 accuracies to wandb."""
