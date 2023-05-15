@@ -232,9 +232,9 @@ class BaselineTA3N(nn.Module):
             ]))
             self.beta = beta
 
-            self.bias = nn.ParameterList([self.domain_classifier[1].bias, self.domain_classifier[2].bias])
+            self.bias = nn.ParameterList([self.domain_classifier[0].bias, self.domain_classifier[2].bias])
             
-            self.weight = nn.ParameterList([self.domain_classifier[1].weight, self.domain_classifier[2].weight])
+            self.weight = nn.ParameterList([self.domain_classifier[0].weight, self.domain_classifier[2].weight])
 
             for bias in self.bias:
                 constant_(bias, 0)
