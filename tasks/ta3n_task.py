@@ -96,10 +96,10 @@ class ActionRecognition(tasks.Task, ABC):
 
         if 'Gsd' in self.model_args['RGB'].blocks:
             pred_gsd_source = features['pred_gsd_source']
-            domain_label_source=torch.zeros(pred_gsd_source.shape[0], dtype=torch.int8)    
+            domain_label_source=torch.zeros(pred_gsd_source.shape[0], dtype=torch.int64)    
             
             pred_gsd_target = features['pred_gsd_target']
-            domain_label_target=torch.ones(pred_gsd_target.shape[0], dtype=torch.int8)
+            domain_label_target=torch.ones(pred_gsd_target.shape[0], dtype=torch.int64)
 
             domain_label_all=torch.cat((domain_label_source, domain_label_target),0).to(self.device)
             pred_gsd_all=torch.cat((pred_gsd_source, pred_gsd_target),0)
@@ -109,10 +109,10 @@ class ActionRecognition(tasks.Task, ABC):
 
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
-            domain_label_source=torch.zeros(pred_gtd_source.shape[0], dtype=torch.int8)
+            domain_label_source=torch.zeros(pred_gtd_source.shape[0], dtype=torch.int64)
         
             pred_gtd_target = features['pred_gtd_target']
-            domain_label_target=torch.ones(pred_gtd_target.shape[0], dtype=torch.int8)
+            domain_label_target=torch.ones(pred_gtd_target.shape[0], dtype=torch.int64)
             
             domain_label_all=torch.cat((domain_label_source, domain_label_target),0).to(self.device)
             pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target),0)
