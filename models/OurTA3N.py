@@ -92,11 +92,9 @@ class BaselineTA3N(nn.Module):
         if is_train:
             target = self._modules['Spatial module'](target)
         
-        raise UserWarning(f'shape of source is {source.shape}')
-        
         if 'Gsd' in self.end_points and is_train:
-            predictions_gsd_source = self._modules['Gsd'](source) # to concat
-            predictions_gsd_target = self._modules['Gsd'](target)
+            predictions_gsd_source = self._modules['Gsd'](source.view((-1,1024))) # to concat
+            predictions_gsd_target = self._modules['Gsd'](target.view((-1,1024)))
         else:
             predictions_gsd_source = None
             predictions_gsd_target = None
