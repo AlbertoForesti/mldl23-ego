@@ -45,7 +45,8 @@ class ActionRecognition(tasks.Task, ABC):
         self.classification_loss  = utils.AverageMeter()
         self.gsd_loss = utils.AverageMeter()
         self.gtd_loss = utils.AverageMeter()
-        
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         self.num_clips = num_clips
 
         # Use the cross entropy loss as the default criterion for the classification task
@@ -100,10 +101,8 @@ class ActionRecognition(tasks.Task, ABC):
             pred_gsd_target = features['pred_gsd_target']
             domain_label_target=torch.ones(pred_gsd_target.shape[0])
 
-            domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
+            domain_label_all=torch.cat((domain_label_source, domain_label_target),0).to(self.device)
             pred_gsd_all=torch.cat((pred_gsd_source, pred_gsd_target),0)
-
-            raise UserWarning(f'Device of labels is {domain_label_all.get_device()}, device of logits is {pred_gsd_all.get_device()}')
 
             gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
             self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
@@ -115,7 +114,7 @@ class ActionRecognition(tasks.Task, ABC):
             pred_gtd_target = features['pred_gtd_target']
             domain_label_target=torch.ones(pred_gtd_target.shape[0])
             
-            domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
+            domain_label_all=torch.cat((domain_label_source, domain_label_target),0).to(self.device)
             pred_gtd_all=torch.cat((pred_gtd_source,pred_gtd_target),0)
 
             gtd_loss = self.criterion(pred_gtd_all, domain_label_all)
