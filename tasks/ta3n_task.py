@@ -101,7 +101,9 @@ class ActionRecognition(tasks.Task, ABC):
             domain_label_target=torch.ones(pred_gsd_target.shape[0])
 
             domain_label_all=torch.cat((domain_label_source, domain_label_target),0)
-            pred_gsd_all=torch.cat((pred_gsd_source,pred_gsd_target ),0)
+            pred_gsd_all=torch.cat((pred_gsd_source, pred_gsd_target),0)
+
+            raise UserWarning(f'Shape of domain label is {domain_label_all.shape}, shape of predictions all is {pred_gsd_all.shape}')
 
             gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
             self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper

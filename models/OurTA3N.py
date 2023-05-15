@@ -226,8 +226,8 @@ class BaselineTA3N(nn.Module):
             super(BaselineTA3N.DomainClassifier, self).__init__()
             self.in_features_dim = in_features_dim
             self.domain_classifier = nn.Sequential(OrderedDict([
-                ('relu1', nn.ReLU(inplace=True)),
                 ('linear1', nn.Linear(self.in_features_dim, self.in_features_dim)),
+                ('relu1', nn.ReLU(inplace=True)),
                 ('linear2', nn.Linear(self.in_features_dim, 2))
             ]))
             self.beta = beta
