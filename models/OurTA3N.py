@@ -243,6 +243,6 @@ class BaselineTA3N(nn.Module):
                 normal_(weight, 0, std)
                     
         def forward(self, x):
-            x = BaselineTA3N.GradReverse.apply(x,self.beta)
+            BaselineTA3N.GradReverse.apply(x,self.beta)
             x = self.domain_classifier(x)
             return x
