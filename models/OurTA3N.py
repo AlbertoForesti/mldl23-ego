@@ -236,8 +236,11 @@ class BaselineTA3N(nn.Module):
             
             self.weight = nn.ParameterList([self.domain_classifier[1].weight, self.domain_classifier[2].weight])
 
-            constant_(self.bias, 0)
-            normal_(self.weight, 0, std)
+            for bias in self.bias:
+                constant_(bias, 0)
+            
+            for weight in self.weight:
+                normal_(weight, 0, std)
                     
         def forward(self, x):
             x = BaselineTA3N.GradReverse.apply(x,self.beta)
