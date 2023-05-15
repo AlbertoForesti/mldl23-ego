@@ -99,8 +99,6 @@ class BaselineTA3N(nn.Module):
             predictions_gsd_source = None
             predictions_gsd_target = None
 
-            
-
         source = self._modules['Temporal module'](source, num_segments)
 
         if is_train:
@@ -144,7 +142,6 @@ class BaselineTA3N(nn.Module):
         def forward(self, x):
             return self.fc_layers(x)
             
-
 
     class FullyConnectedLayer(nn.Module):
         def __init__(self, in_features_dim, out_features_dim, dropout=0.5):

@@ -244,9 +244,7 @@ def validate(model, val_loader, device, it, num_classes):
             for m in modalities:
                 logits[m] = output[m]
 
-            logits = logits['RGB']
-
-            model.compute_accuracy(logits, label)
+            model.compute_accuracy(logits['RGB'], label)
 
             if (i_val + 1) % (len(val_loader) // 5) == 0:
                 logger.info("[{}/{}] top1= {:.3f}% top5 = {:.3f}%".format(i_val + 1, len(val_loader),
