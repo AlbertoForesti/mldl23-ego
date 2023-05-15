@@ -203,10 +203,13 @@ class ActionRecognition(tasks.Task, ABC):
             whether the computational graph should be retained, by default False
         """
         # self.loss.val.backward(retain_graph=retain_graph)
+
+
+
         if 'Gsd' in self.model_args['RGB'].blocks:
-            self.gsd_loss.val.backward(retain_graph=retain_graph)
+            self.gsd_loss.val.backward(retain_graph=True)
         
         if 'Gtd' in self.model_args['RGB'].blocks:
-            self.gtd_loss.val.backward(retain_graph=retain_graph)
+            self.gtd_loss.val.backward(retain_graph=True)
         
         self.classification_loss.val.backward(retain_graph=retain_graph)
