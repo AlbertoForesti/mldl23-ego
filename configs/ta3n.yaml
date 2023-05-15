@@ -57,4 +57,5 @@ models:
     final_endpoint: Logits
     n_fcl: 2
     blocks: []
+    beta: [0.75, 0.75]
 

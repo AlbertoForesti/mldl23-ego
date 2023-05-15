@@ -45,7 +45,7 @@ class BaselineTA3N(nn.Module):
         
         end_point = 'Gsd'
         if end_point in self.model_config.blocks:
-            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
+            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta[0])
             if self._final_endpoint == end_point:
                 return
         
@@ -57,7 +57,7 @@ class BaselineTA3N(nn.Module):
         
         end_point = 'Gtd'
         if end_point in self.model_config.blocks:
-            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta)
+            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta[1])
             if self._final_endpoint == end_point:
                 return
         
