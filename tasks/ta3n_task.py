@@ -210,7 +210,7 @@ class ActionRecognition(tasks.Task, ABC):
             loss += self.gsd_loss.val
         
         if 'Gtd' in self.model_args['RGB'].blocks:
-            loss += self.gtd_loss.val.backward()
+            loss += self.gtd_loss.val
         
         loss += self.classification_loss.val
 
