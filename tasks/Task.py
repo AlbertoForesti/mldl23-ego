@@ -217,7 +217,7 @@ class Task(torch.nn.Module, metaclass=ABCMeta):
                         "best_iter": self.best_iter,
                         "best_iter_score": self.best_iter_score,
                         "acc_mean": last_iter_acc,
-                        "loss_mean": self.loss.acc,
+                        "loss_mean": self.classification_loss.acc,
                         "model_state_dict": self.task_models[m].state_dict(),
                         "optimizer_state_dict": self.optimizer[m].state_dict(),
                         "last_model_count_saved": self.model_count,
