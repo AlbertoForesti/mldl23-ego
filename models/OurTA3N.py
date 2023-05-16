@@ -99,10 +99,10 @@ class BaselineTA3N(nn.Module):
             predictions_gsd_source = None
             predictions_gsd_target = None
 
-        source = self._modules['Temporal module'](source, num_segments)
+        source, feats_trn_source = self._modules['Temporal module'](source, num_segments)
 
         if is_train:
-            target = self._modules['Temporal module'](target, num_segments)
+            target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
         
         if 'Gtd' in self.end_points and is_train:
             predictions_gtd_source = self._modules['Gtd'](source) # to concat
@@ -184,8 +184,8 @@ class BaselineTA3N(nn.Module):
         def forward(self, x, num_segments):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
-                x = self.trn(x)
-                return torch.sum(x, 1)
+                x, feats = self.trn(x)
+                return torch.sum(x, 1), feats
             elif self.pooling_type =="TemPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
                 if x is None:
@@ -200,7 +200,7 @@ class BaselineTA3N(nn.Module):
                 
                 if x is None:
                     raise UserWarning('Reshape squeeze no good')
-                return x
+                return x, None
             else:
                 raise NotImplementedError
                
@@ -243,6 +243,6 @@ class BaselineTA3N(nn.Module):
                 normal_(weight, 0, std)
                     
         def forward(self, x):
-            BaselineTA3N.GradReverse.apply(x,self.beta)
+            x = BaselineTA3N.GradReverse.apply(x,self.beta)
             x = self.domain_classifier(x)
             return x
