@@ -48,6 +48,7 @@ class RelationModuleMultiScale(torch.nn.Module):
             fc_fusion = nn.Sequential(
                         nn.ReLU(),
                         nn.Linear(scale * self.img_feature_dim, num_bottleneck),
+                        nn.BatchNorm1d(num_bottleneck),
                         nn.ReLU(),
                         )
 
