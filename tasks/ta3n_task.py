@@ -145,7 +145,7 @@ class ActionRecognition(tasks.Task, ABC):
     def wandb_log(self):
         """Log the current loss and top1/top5 accuracies to wandb."""
         logs = {
-            'loss verb': self.loss.val, 
+            'loss verb': self.classification_loss.val,
             'top1-accuracy': self.accuracy.avg[1],
             'top5-accuracy': self.accuracy.avg[5]
         }
@@ -204,12 +204,14 @@ class ActionRecognition(tasks.Task, ABC):
         """
         # self.loss.val.backward(retain_graph=retain_graph)
 
-
+        loss = 0
 
         if 'Gsd' in self.model_args['RGB'].blocks:
-            self.gsd_loss.val.backward(retain_graph=True)
+            loss += self.gsd_loss.val
         
         if 'Gtd' in self.model_args['RGB'].blocks:
-            self.gtd_loss.val.backward(retain_graph=True)
+            loss += self.gtd_loss.val.backward()
         
-        self.classification_loss.val.backward(retain_graph=retain_graph)
+        loss += self.classification_loss.val
+
+        loss.backward(retain_graph=retain_graph)
