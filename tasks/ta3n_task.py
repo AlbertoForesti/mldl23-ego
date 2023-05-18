@@ -121,7 +121,7 @@ class ActionRecognition(tasks.Task, ABC):
             gtd_loss = self.criterion(pred_gtd_all, domain_label_all)
             self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
         
-        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].temporal_aggregation == 'TemRelation':
+        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             grd_loss = []
             for pred_grd_source_single_scale, pred_grd_target_single_scale in zip(features['pred_grd_source'].values(), features['pred_grd_target'].values()):
                 domain_label_source = torch.zeros(pred_grd_source_single_scale.shape[0], dtype=torch.int64)
@@ -191,7 +191,7 @@ class ActionRecognition(tasks.Task, ABC):
         if 'Gtd' in self.model_args['RGB'].blocks:
             self.gtd_loss.reset()
         
-        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].temporal_aggregation == 'TemRelation':
+        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             self.grd_loss.reset()
 
         self.classification_loss.reset()
@@ -231,7 +231,7 @@ class ActionRecognition(tasks.Task, ABC):
         if 'Gtd' in self.model_args['RGB'].blocks:
             loss += self.gtd_loss.val
         
-        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].temporal_aggregation == 'TemRelation':
+        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             loss += self.grd_loss.val
 
         loss += self.classification_loss.val
