@@ -184,8 +184,9 @@ class BaselineTA3N(nn.Module):
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
                 self.out_features_dim = self.num_bottleneck
                 if 'Grd' in self.model_config.blocks:
+                    self.domain_classifiers = {}
                     for i in range(self.train_segments-1):
-                        self.end_points[f'Grd_{i}'] = BaselineTA3N.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
+                        self.domain_classifiers[f'Grd_{i}'] = BaselineTA3N.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
             else:
                 raise NotImplementedError
         
@@ -200,7 +201,7 @@ class BaselineTA3N(nn.Module):
                 if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation' and is_train:
                     predictions_grd = {}
                     for i, feats_trn_single_scale in enumerate(feats.values()):
-                        predictions_grd[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_single_scale)
+                        predictions_grd[f'Grd_{i}'] = self.domain_classifiers[f'Grd_{i}'](feats_trn_single_scale)
                         if self.model_config.attention == 'Yes':
                             entropy_grd = torch.special.entr(predictions_grd[f'Grd_{i}']).sum(dim=1)
                             torch.cat((entropy_grd, entropy_all), 1)
