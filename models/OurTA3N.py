@@ -186,7 +186,7 @@ class BaselineTA3N(nn.Module):
                 if 'Grd' in self.model_config.blocks:
                     self.domain_classifiers = {}
                     for i in range(self.train_segments-1):
-                        self.domain_classifiers[f'Grd_{i}'] = BaselineTA3N.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
+                        self.domain_classifiers[f'Grd_{i}'] = BaselineTA3N.DomainClassifier(self.num_bottleneck,model_config.beta[2])
             else:
                 raise NotImplementedError
         
