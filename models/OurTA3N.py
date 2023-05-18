@@ -120,6 +120,8 @@ class BaselineTA3N(nn.Module):
         
         if is_train:
             predictions_clf_target = self.fc_classifier_video(target)
+        else:
+            predictions_clf_target = None
         
         return logits, {"pred_gsd_source": predictions_gsd_source,"pred_gsd_target": predictions_gsd_target, \
                         "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target, \
