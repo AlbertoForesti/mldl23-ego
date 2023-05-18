@@ -132,7 +132,7 @@ class ActionRecognition(tasks.Task, ABC):
 
                 grd_loss_single_scale = self.criterion(pred_grd_all_single_scale, domain_label_all)
                 grd_loss.append(grd_loss_single_scale)
-            grd_loss = sum(grd_loss)/(len(grd_loss)-1)
+            grd_loss = sum(grd_loss)/(len(grd_loss))
             self.grd_loss.update(torch.mean(grd_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
         
