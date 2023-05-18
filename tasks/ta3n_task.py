@@ -46,6 +46,7 @@ class ActionRecognition(tasks.Task, ABC):
         self.gsd_loss = utils.AverageMeter()
         self.gtd_loss = utils.AverageMeter()
         self.grd_loss = utils.AverageMeter()
+        self.lae_loss = utils.AverageMeter()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.num_clips = num_clips
