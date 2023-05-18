@@ -202,7 +202,7 @@ class BaselineTA3N(nn.Module):
                 if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation' and is_train:
                     predictions_grd = {}
                     for i, feats_trn_single_scale in enumerate(feats.values()):
-                        predictions_grd[f'Grd_{i}'] = self.domain_classifiers[f'Grd_{i}'](feats_trn_single_scale.to(self.device))
+                        predictions_grd[f'Grd_{i}'] = self.domain_classifiers[f'Grd_{i}'](feats_trn_single_scale).to(self.device)
                         if self.model_config.attention == 'Yes':
                             entropy_grd = torch.special.entr(predictions_grd[f'Grd_{i}']).sum(dim=1)
                             torch.cat((entropy_grd, entropy_all), 1)
