@@ -45,6 +45,7 @@ class ActionRecognition(tasks.Task, ABC):
         self.classification_loss  = utils.AverageMeter()
         self.gsd_loss = utils.AverageMeter()
         self.gtd_loss = utils.AverageMeter()
+        self.grd_loss = utils.AverageMeter()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.num_clips = num_clips
@@ -120,6 +121,21 @@ class ActionRecognition(tasks.Task, ABC):
             gtd_loss = self.criterion(pred_gtd_all, domain_label_all)
             self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
         
+        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].temporal_aggregation == 'TemRelation':
+            grd_loss = []
+            for pred_grd_source_single_scale, pred_grd_target_single_scale in zip(features['pred_grd_source'].values(), features['pred_grd_target'].values()):
+                domain_label_source = torch.zeros(pred_grd_source_single_scale.shape[0], dtype=torch.int64)
+                domain_label_target = torch.ones(pred_grd_target_single_scale.shape[0], dtype=torch.int64)
+
+                domain_label_all=torch.cat((domain_label_source, domain_label_target),0).to(self.device)
+                pred_grd_all_single_scale = torch.cat((pred_grd_source_single_scale, pred_grd_target_single_scale))
+
+                grd_loss_single_scale = self.criterion(pred_grd_all_single_scale, domain_label_all)
+                grd_loss.append(grd_loss_single_scale)
+            grd_loss = sum(grd_loss)/(len(grd_loss)-1)
+            self.grd_loss.update(torch.mean(grd_loss) / (self.total_batch / self.batch_size), self.batch_size)
+
+        
         
         # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
         # we need different losses to backpropagate to different parts of the network
@@ -175,6 +191,9 @@ class ActionRecognition(tasks.Task, ABC):
         if 'Gtd' in self.model_args['RGB'].blocks:
             self.gtd_loss.reset()
         
+        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].temporal_aggregation == 'TemRelation':
+            self.grd_loss.reset()
+
         self.classification_loss.reset()
 
     def reset_acc(self):
@@ -212,6 +231,9 @@ class ActionRecognition(tasks.Task, ABC):
         if 'Gtd' in self.model_args['RGB'].blocks:
             loss += self.gtd_loss.val
         
+        if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].temporal_aggregation == 'TemRelation':
+            loss += self.grd_loss.val
+
         loss += self.classification_loss.val
 
         loss.backward(retain_graph=retain_graph)

@@ -55,6 +55,10 @@ class BaselineTA3N(nn.Module):
         if self._final_endpoint == end_point:
             return
         
+        if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.temporal_aggregation == 'TemRelation':
+            for i in range(self.train_segments):
+                self.end_points[f'Grd_{i}'] = self.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
+        
         end_point = 'Gtd'
         if end_point in self.model_config.blocks:
             self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta[1])
@@ -104,6 +108,18 @@ class BaselineTA3N(nn.Module):
         if is_train:
             target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
         
+        
+        if 'Grd' in self.model_config.blocks and self.model_config.temporal_aggregation == 'TemRelation' and is_train:
+            predictions_grd_source = {}
+            predictions_grd_target = {}
+            for i, feats_trn_source_single_scale in enumerate(feats_trn_source.values()):
+                predictions_grd_source[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_source_single_scale)
+            for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
+                predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
+        else:
+            predictions_grd_source = None
+            predictions_grd_target = None
+
         if 'Gtd' in self.end_points and is_train:
             predictions_gtd_source = self._modules['Gtd'](source) # to concat
             predictions_gtd_target = self._modules['Gtd'](target)
@@ -116,7 +132,8 @@ class BaselineTA3N(nn.Module):
         logits = self.fc_classifier_video(source)
         
         return logits, {"pred_gsd_source": predictions_gsd_source,"pred_gsd_target": predictions_gsd_target, \
-                        "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target}
+                        "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target, \
+                        "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target}
     
    
     class SpatialModule(nn.Module):

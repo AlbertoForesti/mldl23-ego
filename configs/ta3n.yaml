@@ -52,10 +52,10 @@ models:
     sgd_momentum: 0.9
     weight_decay: 1e-7
     frame_aggregation: TemPooling
-    train_segments: 5
+    train_segments: 5 # number of relations in temrelations
     val_segments: 25
     final_endpoint: Logits
     n_fcl: 2
     blocks: []
-    beta: [0.75, 0.75]
+    beta: [0.75, 0.75, 0.5]
 
