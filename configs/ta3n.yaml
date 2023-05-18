@@ -59,6 +59,5 @@ models:
     blocks: []
     beta: [0.75, 0.75, 0.5]
     gamma: 0.3
-    ta3n: no
     attention: no
 
