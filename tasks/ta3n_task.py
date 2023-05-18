@@ -123,7 +123,7 @@ class ActionRecognition(tasks.Task, ABC):
             
             if 'ta3n' in self.model_args['RGB'].blocks:
                 entropy_gtd = torch.special.entr(pred_gtd_all).sum(dim=1)
-                pred_clf_all = torch.cat(logits, features['pred_clf_target'])
+                pred_clf_all = torch.cat((logits, features['pred_clf_target']))
                 entropy_clf = torch.special.entr(pred_clf_all).sum(dim=1)
                 lae_loss = entropy_clf + torch.mul(entropy_clf, entropy_gtd)
                 self.lae_loss.update(torch.mean(lae_loss)/(self.total_batch / self.batch_size), self.batch_size)
