@@ -176,6 +176,7 @@ class BaselineTA3N(nn.Module):
             self.in_features_dim = in_features_dim
             self.train_segments = train_segments
             self.model_config = model_config
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             if temporal_pooling == 'TemPooling':
                 self.out_features_dim = self.in_features_dim
                 pass
@@ -196,8 +197,8 @@ class BaselineTA3N(nn.Module):
                 act_scale_1 = act_scale_1.view(act_scale_1.size(0), self.trn.scales[0] * self.trn.img_feature_dim)
                 x = x.view((-1, num_segments) + x.size()[-1:])
                 x, feats = self.trn(x)
-                entropy_all = torch.ones_like(act_scale_1).unsqueeze(1)
-                mask = torch.zeros_like(act_scale_1).unsqueeze(1)
+                entropy_all = torch.ones_like(act_scale_1).unsqueeze(1).to(self.device)
+                mask = torch.zeros_like(act_scale_1).unsqueeze(1).to(self.device)
                 if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation' and is_train:
                     predictions_grd = {}
                     for i, feats_trn_single_scale in enumerate(feats.values()):
