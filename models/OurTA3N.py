@@ -174,8 +174,10 @@ class BaselineTA3N(nn.Module):
             x = self.fc(x)
             x = self.relu(x)
             if self.batch_norm:
-                raise UserWarning(f'shape of x: {x.shape}')
+                original_shape = x.shape
+                x = x.view((-1, x.shape[-1]))
                 x = self.bn(x)
+                x = x.view(original_shape)
             x = self.dropout(x)
             return x
 
