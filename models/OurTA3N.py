@@ -33,7 +33,7 @@ class BaselineTA3N(nn.Module):
         """
        
         end_point = 'Spatial module' # just a fully connected layer
-        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
+        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout, batch_norm = True)
         std = 0.001
         constant_(fc_spatial_module.bias, 0)
         normal_(fc_spatial_module.weight, 0, std)
@@ -154,22 +154,27 @@ class BaselineTA3N(nn.Module):
             
 
     class FullyConnectedLayer(nn.Module):
-        def __init__(self, in_features_dim, out_features_dim, dropout=0.5):
+        def __init__(self, in_features_dim, out_features_dim, dropout=0.5, batch_norm = True):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
             self.in_features_dim = in_features_dim
             self.out_features_dim = out_features_dim
+            self.batch_norm = batch_norm
             
             """Here I am doing what is done in the official code, 
             in the first fc layer the output dimension is the minimum between the input feature dimension and 1024"""
             self.relu = nn.ReLU(inplace=True) # Again using the architecture of the official code
             self.dropout = nn.Dropout(p=dropout)
             self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
+            if batch_norm:
+                self.bn = torch.nn.BatchNorm1d(self.out_features_dim)
             self.bias = self.fc.bias
             self.weight = self.fc.weight
         
         def forward(self, x):
             x = self.fc(x)
             x = self.relu(x)
+            if self.batch_norm:
+                x = self.bn(x)
             x = self.dropout(x)
             return x
 
@@ -210,8 +215,8 @@ class BaselineTA3N(nn.Module):
                         predictions_grd[f'Grd_{i}'] = self.domain_classifiers[f'Grd_{i}'](feats_trn_single_scale).to(self.device)
                         if self.model_config.attention == 'Yes':
                             entropy_grd = torch.special.entr(predictions_grd[f'Grd_{i}']).sum(dim=1)
-                            torch.cat((entropy_grd, entropy_all), 1)
-                            torch.cat((mask, torch.ones_like(entropy_grd)),1)
+                            entropy_all = torch.cat((entropy_all, entropy_grd), 1)
+                            mask = torch.cat((mask, torch.ones_like(entropy_grd)),1)
                     if self.model_config.attention == 'Yes':
                         return torch.sum(torch.mul(x,entropy_all)+torch.mul(x,mask), 1), predictions_grd
                     else:
