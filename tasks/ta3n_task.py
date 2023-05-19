@@ -165,7 +165,7 @@ class ActionRecognition(tasks.Task, ABC):
 
         # attentive entropy
         loss = torch.mean(weights * torch.sum(-softmax(pred) * logsoftmax(pred), 1))
-        raise UserWarning(f'Loss shape is {loss.shape}, pred domain shape is {pred_domain.shape}, pred shape is {pred.shape}, entropy shape is {entropy.shape}')
+        
         return loss
     
     def compute_accuracy(self, logits: Dict[str, torch.Tensor], label: torch.Tensor):
