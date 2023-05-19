@@ -155,7 +155,7 @@ class ActionRecognition(tasks.Task, ABC):
         self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
     
 
-    def attentive_entropy(pred, pred_domain):
+    def attentive_entropy(self, pred, pred_domain):
         softmax = torch.nn.Softmax(dim=1)
         logsoftmax = torch.nn.LogSoftmax(dim=1)
 
