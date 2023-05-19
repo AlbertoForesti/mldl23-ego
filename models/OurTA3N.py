@@ -132,6 +132,8 @@ class BaselineTA3N(nn.Module):
                 predictions_grd_target = {}
                 for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
                     predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
+            else:
+                predictions_grd_target = None
         else:
             predictions_grd_source = None
             predictions_grd_target = None
