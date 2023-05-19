@@ -60,9 +60,9 @@ class RelationModuleMultiScale(torch.nn.Module):
         act_scale_1 = input[:, self.relations_scales[0][0] , :]
         act_scale_1 = act_scale_1.view(act_scale_1.size(0), self.scales[0] * self.img_feature_dim)
         act_scale_1 = self.fc_fusion_scales[0](act_scale_1)
+        feats = {0: act_scale_1}
         act_scale_1 = act_scale_1.unsqueeze(1) # add one dimension for the later concatenation
         act_all = act_scale_1.clone()
-        feats = {}
 
         for scaleID in range(1, len(self.scales)):
             act_relation_all = torch.zeros_like(act_scale_1)

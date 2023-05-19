@@ -123,13 +123,15 @@ class BaselineTA3N(nn.Module):
             target = None
             predictions_grd_target = None
 
-        if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation' and is_train:
+        if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
             predictions_grd_source = {}
-            predictions_grd_target = {}
             for i, feats_trn_source_single_scale in enumerate(feats_trn_source.values()):
                 predictions_grd_source[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_source_single_scale)
-            for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
-                predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
+
+            if is_train:
+                predictions_grd_target = {}
+                for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
+                    predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
         else:
             predictions_grd_source = None
             predictions_grd_target = None
@@ -144,7 +146,7 @@ class BaselineTA3N(nn.Module):
                 target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
 
         if 'Gtd' in self.end_points and is_train:
-            predictions_gtd_source = self._modules['Gtd'](source) # to concat
+            predictions_gtd_source = self._modules['Gtd'](source)
             predictions_gtd_target = self._modules['Gtd'](target)
         else:
             predictions_gtd_source = None
