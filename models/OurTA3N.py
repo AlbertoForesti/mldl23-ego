@@ -55,6 +55,10 @@ class BaselineTA3N(nn.Module):
         if self._final_endpoint == end_point:
             return
         
+        if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.frame_aggregation == 'TemRelation':
+            for i in range(self.train_segments-1):
+                self.end_points[f'Grd_{i}'] = self.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
+        
         end_point = 'Gtd'
         if end_point in self.model_config.blocks:
             self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta[1])
@@ -76,13 +80,25 @@ class BaselineTA3N(nn.Module):
         constant_(self.fc_classifier_video.bias, 0)
 
         self.build()
-        
-        
 
     def build(self):
         for k in self.end_points.keys():
             self.add_module(k, self.end_points[k])
 
+    def get_trans_attn(self, pred_domain):
+        softmax = nn.Softmax(dim=1)
+        logsoftmax = nn.LogSoftmax(dim=1)
+        entropy = torch.sum(-softmax(pred_domain) * logsoftmax(pred_domain), 1)
+        weights = 1 - entropy
+        return weights
+
+    def get_attn_feat_relation(self, feat_fc, pred_domain, num_segments):
+        weights_attn = self.get_trans_attn(pred_domain)
+
+        weights_attn = weights_attn.view(-1, num_segments-1, 1).repeat(1,1,feat_fc.size()[-1]) # reshape & repeat weights (e.g. 16 x 4 x 256)
+        feat_fc_attn = (weights_attn+1) * feat_fc
+
+        return feat_fc_attn, weights_attn[:,:,0]
 
     def forward(self, source, target=None, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
@@ -99,13 +115,33 @@ class BaselineTA3N(nn.Module):
             predictions_gsd_source = None
             predictions_gsd_target = None
 
-        source, predictions_grd_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
+        source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
 
         if is_train:
-            target, predictions_grd_target = self._modules['Temporal module'](target, num_segments)
+            target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
         else:
             target = None
             predictions_grd_target = None
+
+        if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation' and is_train:
+            predictions_grd_source = {}
+            predictions_grd_target = {}
+            for i, feats_trn_source_single_scale in enumerate(feats_trn_source.values()):
+                predictions_grd_source[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_source_single_scale)
+            for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
+                predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
+        else:
+            predictions_grd_source = None
+            predictions_grd_target = None
+        
+        if self.model_config.attention == 'Yes':
+
+            pred_fc_domain_relation_video_source = torch.cat((pred.view(-1,1,2) for pred in predictions_grd_source.values()),1).view(-1,2)
+            source, _ = self.get_attn_feat_relation(source, pred_fc_domain_relation_video_source, num_segments)
+
+            if is_train:
+                pred_fc_domain_relation_video_target = torch.cat((pred.view(-1,1,2) for pred in predictions_grd_target.values()),1).view(-1,2)
+                target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
 
         if 'Gtd' in self.end_points and is_train:
             predictions_gtd_source = self._modules['Gtd'](source) # to concat
@@ -127,8 +163,7 @@ class BaselineTA3N(nn.Module):
                         "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target, \
                         "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target, \
                         "pred_clf_target": predictions_clf_target}
-    
-   
+
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
             
@@ -189,35 +224,14 @@ class BaselineTA3N(nn.Module):
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
                 self.out_features_dim = self.num_bottleneck
-                if 'Grd' in self.model_config.blocks:
-                    self.domain_classifiers = {}
-                    for i in range(self.train_segments-1):
-                        self.domain_classifiers[f'Grd_{i}'] = BaselineTA3N.DomainClassifier(self.num_bottleneck,model_config.beta[2]).to(self.device)
             else:
                 raise NotImplementedError
         
         def forward(self, x, num_segments, is_train=True):
             if self.pooling_type == 'TemRelation':
-                act_scale_1 = x[:, self.trn.relations_scales[0][0] , :]
-                act_scale_1 = act_scale_1.view(act_scale_1.size(0), self.trn.scales[0] * self.trn.img_feature_dim)
                 x = x.view((-1, num_segments) + x.size()[-1:])
                 x, feats = self.trn(x)
-                entropy_all = torch.ones_like(act_scale_1).unsqueeze(1).to(self.device)
-                mask = torch.zeros_like(act_scale_1).unsqueeze(1).to(self.device)
-                if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation' and is_train:
-                    predictions_grd = {}
-                    for i, feats_trn_single_scale in enumerate(feats.values()):
-                        predictions_grd[f'Grd_{i}'] = self.domain_classifiers[f'Grd_{i}'](feats_trn_single_scale).to(self.device)
-                        if self.model_config.attention == 'Yes':
-                            entropy_grd = torch.special.entr(predictions_grd[f'Grd_{i}']).sum(dim=1)
-                            entropy_all = torch.cat((entropy_all, entropy_grd), 1)
-                            mask = torch.cat((mask, torch.ones_like(entropy_grd)),1)
-                    if self.model_config.attention == 'Yes':
-                        return torch.sum(torch.mul(x,entropy_all)+torch.mul(x,mask), 1), predictions_grd
-                    else:
-                        return torch.sum(x, 1), predictions_grd
-                else:
-                    return torch.sum(x, 1), None
+                return torch.sum(x, 1), feats
                 
             elif self.pooling_type =="TemPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
