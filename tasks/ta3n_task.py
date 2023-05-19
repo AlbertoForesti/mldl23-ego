@@ -123,11 +123,15 @@ class ActionRecognition(tasks.Task, ABC):
             self.gtd_loss.update(torch.mean(gtd_loss) / (self.total_batch / self.batch_size), self.batch_size)
             
             if 'ta3n' in self.model_args['RGB'].blocks:
-                entropy_gtd = torch.special.entr(pred_gtd_all).sum(dim=1)
                 pred_clf_all = torch.cat((logits, features['pred_clf_target']))
+                
+                """entropy_gtd = torch.special.entr(pred_gtd_all).sum(dim=1)
                 entropy_clf = torch.special.entr(pred_clf_all).sum(dim=1)
                 lae_loss = entropy_clf + torch.mul(entropy_clf, entropy_gtd)
-                self.lae_loss.update(torch.mean(lae_loss)/(self.total_batch / self.batch_size), self.batch_size)
+                self.lae_loss.update(torch.mean(lae_loss)/(self.total_batch / self.batch_size), self.batch_size)"""
+
+                lae_loss = self.attentive_entropy(pred_clf_all, pred_gtd_all)
+                self.lae_loss.update(lae_loss/(self.total_batch / self.batch_size), self.batch_size)
         
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             grd_loss = []
@@ -149,8 +153,19 @@ class ActionRecognition(tasks.Task, ABC):
         # we need different losses to backpropagate to different parts of the network
         
         self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
+    
 
+    def attentive_entropy(pred, pred_domain):
+        softmax = torch.nn.Softmax(dim=1)
+        logsoftmax = torch.nn.LogSoftmax(dim=1)
 
+        # attention weight
+        entropy = torch.sum(-softmax(pred_domain) * logsoftmax(pred_domain), 1)
+        weights = 1 + entropy
+
+        # attentive entropy
+        loss = torch.mean(weights * torch.sum(-softmax(pred) * logsoftmax(pred), 1))
+        return loss
     
     def compute_accuracy(self, logits: Dict[str, torch.Tensor], label: torch.Tensor):
         """Fuse the logits from different modalities and compute the classification accuracy.
