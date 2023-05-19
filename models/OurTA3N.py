@@ -158,7 +158,6 @@ class BaselineTA3N(nn.Module):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
             self.in_features_dim = in_features_dim
             self.out_features_dim = out_features_dim
-            self.batch_norm = batch_norm
             
             """Here I am doing what is done in the official code, 
             in the first fc layer the output dimension is the minimum between the input feature dimension and 1024"""
