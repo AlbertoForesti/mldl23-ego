@@ -33,7 +33,7 @@ class BaselineTA3N(nn.Module):
         """
        
         end_point = 'Spatial module' # just a fully connected layer
-        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout, batch_norm = model_config.batch_normalization)
+        fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
         std = 0.001
         constant_(fc_spatial_module.bias, 0)
         normal_(fc_spatial_module.weight, 0, std)
