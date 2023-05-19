@@ -154,9 +154,6 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
             target_data, target_label = next(data_loader_target)
         end_t = datetime.now()
 
-        logger.info(f"Iteration {i}/{training_iterations} batch retrieved! Elapsed time = "
-                    f"{(end_t - start_t).total_seconds() // 60} m {(end_t - start_t).total_seconds() % 60} s")
-
         ''' Action recognition'''
         source_label = source_label.to(device)
         target_label=target_label.to(device)
