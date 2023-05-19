@@ -154,7 +154,7 @@ class BaselineTA3N(nn.Module):
             
 
     class FullyConnectedLayer(nn.Module):
-        def __init__(self, in_features_dim, out_features_dim, dropout=0.5, batch_norm = True):
+        def __init__(self, in_features_dim, out_features_dim, dropout=0.5):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
             self.in_features_dim = in_features_dim
             self.out_features_dim = out_features_dim
@@ -165,19 +165,12 @@ class BaselineTA3N(nn.Module):
             self.relu = nn.ReLU(inplace=True) # Again using the architecture of the official code
             self.dropout = nn.Dropout(p=dropout)
             self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
-            if batch_norm:
-                self.bn = torch.nn.BatchNorm1d(self.out_features_dim)
             self.bias = self.fc.bias
             self.weight = self.fc.weight
         
         def forward(self, x):
             x = self.fc(x)
             x = self.relu(x)
-            if self.batch_norm:
-                original_shape = x.shape
-                x = x.view((-1, x.shape[-1]))
-                x = self.bn(x)
-                x = x.view(original_shape)
             x = self.dropout(x)
             return x
 
