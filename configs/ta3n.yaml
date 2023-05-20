@@ -59,7 +59,9 @@ models:
     final_endpoint: Logits
     n_fcl: 2
     blocks: []
-    beta: [0.75, 0.75, 0.5]
+    beta0: 0.75
+    beta1: 0.75
+    beta2: 0.5
     gamma: 0.3
     attention: no
     batch_normalization: True

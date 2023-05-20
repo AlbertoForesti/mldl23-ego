@@ -45,7 +45,7 @@ class BaselineTA3N(nn.Module):
         
         end_point = 'Gsd'
         if end_point in self.model_config.blocks:
-            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta[0])
+            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta0)
             if self._final_endpoint == end_point:
                 return
         
@@ -57,11 +57,11 @@ class BaselineTA3N(nn.Module):
         
         if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.frame_aggregation == 'TemRelation':
             for i in range(self.train_segments-1):
-                self.end_points[f'Grd_{i}'] = self.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
+                self.end_points[f'Grd_{i}'] = self.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta2)
         
         end_point = 'Gtd'
         if end_point in self.model_config.blocks:
-            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta[1])
+            self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta1)
             if self._final_endpoint == end_point:
                 return
         
