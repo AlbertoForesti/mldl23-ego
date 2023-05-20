@@ -182,6 +182,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
         action_classifier.compute_loss(logits, source_label, features)
         action_classifier.backward(retain_graph=False)
         action_classifier.compute_accuracy(logits, source_label)
+        action_classifier.wandb_log()
 
         # update weights and zero gradients if total_batch samples are passed
         if gradient_accumulation_step:
