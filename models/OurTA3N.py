@@ -50,10 +50,14 @@ class BaselineTA3N(nn.Module):
                 return
         
         end_point = 'Temporal module'
-        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation)
+        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation, model_config=self.model_config)
         in_features_dim = self.end_points[end_point].out_features_dim
         if self._final_endpoint == end_point:
             return
+        
+        if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.frame_aggregation == 'TemRelation':
+            for i in range(self.train_segments-1):
+                self.end_points[f'Grd_{i}'] = self.DomainClassifier(self.end_points['Temporal module'].num_bottleneck,model_config.beta[2])
         
         end_point = 'Gtd'
         if end_point in self.model_config.blocks:
@@ -76,13 +80,25 @@ class BaselineTA3N(nn.Module):
         constant_(self.fc_classifier_video.bias, 0)
 
         self.build()
-        
-        
 
     def build(self):
         for k in self.end_points.keys():
             self.add_module(k, self.end_points[k])
 
+    def get_trans_attn(self, pred_domain):
+        softmax = nn.Softmax(dim=1)
+        logsoftmax = nn.LogSoftmax(dim=1)
+        entropy = torch.sum(-softmax(pred_domain) * logsoftmax(pred_domain), 1)
+        weights = 1 - entropy
+        return weights
+
+    def get_attn_feat_relation(self, feat_fc, pred_domain, num_segments):
+        weights_attn = self.get_trans_attn(pred_domain)
+
+        weights_attn = weights_attn.view(-1, num_segments-1, 1).repeat(1,1,feat_fc.size()[-1]) # reshape & repeat weights (e.g. 16 x 4 x 256)
+        feat_fc_attn = (weights_attn+1) * feat_fc
+
+        return feat_fc_attn, weights_attn[:,:,0]
 
     def forward(self, source, target=None, is_train=True):
         num_segments = self.train_segments if is_train else self.val_segments
@@ -99,13 +115,40 @@ class BaselineTA3N(nn.Module):
             predictions_gsd_source = None
             predictions_gsd_target = None
 
-        source = self._modules['Temporal module'](source, num_segments)
+        source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
 
         if is_train:
-            target = self._modules['Temporal module'](target, num_segments)
+            target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
+        else:
+            target = None
+            predictions_grd_target = None
+
+        if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
+            predictions_grd_source = {}
+            for i, feats_trn_source_single_scale in enumerate(feats_trn_source.values()):
+                predictions_grd_source[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_source_single_scale)
+
+            if is_train:
+                predictions_grd_target = {}
+                for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
+                    predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
+            else:
+                predictions_grd_target = None
+        else:
+            predictions_grd_source = None
+            predictions_grd_target = None
         
+        if self.model_config.attention == 'Yes':
+
+            pred_fc_domain_relation_video_source = torch.cat((pred.view(-1,1,2) for pred in predictions_grd_source.values()),1).view(-1,2)
+            source, _ = self.get_attn_feat_relation(source, pred_fc_domain_relation_video_source, num_segments)
+
+            if is_train:
+                pred_fc_domain_relation_video_target = torch.cat((pred.view(-1,1,2) for pred in predictions_grd_target.values()),1).view(-1,2)
+                target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
+
         if 'Gtd' in self.end_points and is_train:
-            predictions_gtd_source = self._modules['Gtd'](source) # to concat
+            predictions_gtd_source = self._modules['Gtd'](source)
             predictions_gtd_target = self._modules['Gtd'](target)
         else:
             predictions_gtd_source = None
@@ -115,10 +158,16 @@ class BaselineTA3N(nn.Module):
 
         logits = self.fc_classifier_video(source)
         
+        if is_train:
+            predictions_clf_target = self.fc_classifier_video(target)
+        else:
+            predictions_clf_target = None
+        
         return logits, {"pred_gsd_source": predictions_gsd_source,"pred_gsd_target": predictions_gsd_target, \
-                        "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target}
-    
-   
+                        "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target, \
+                        "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target, \
+                        "pred_clf_target": predictions_clf_target}
+
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
             
@@ -165,11 +214,13 @@ class BaselineTA3N(nn.Module):
 
 
     class TemporalModule(nn.Module):
-        def __init__(self, in_features_dim, train_segments, temporal_pooling = 'TemPooling') -> None:
+        def __init__(self, in_features_dim, train_segments, temporal_pooling = 'TemPooling', model_config=None) -> None:
             super(BaselineTA3N.TemporalModule, self).__init__()
             self.pooling_type = temporal_pooling
             self.in_features_dim = in_features_dim
             self.train_segments = train_segments
+            self.model_config = model_config
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             if temporal_pooling == 'TemPooling':
                 self.out_features_dim = self.in_features_dim
                 pass
@@ -177,15 +228,15 @@ class BaselineTA3N(nn.Module):
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
                 self.out_features_dim = self.num_bottleneck
-                pass
             else:
                 raise NotImplementedError
         
-        def forward(self, x, num_segments):
+        def forward(self, x, num_segments, is_train=True):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
-                x = self.trn(x)
-                return torch.sum(x, 1)
+                x, feats = self.trn(x)
+                return torch.sum(x, 1), feats
+                
             elif self.pooling_type =="TemPooling":
                 x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
                 if x is None:
@@ -200,7 +251,7 @@ class BaselineTA3N(nn.Module):
                 
                 if x is None:
                     raise UserWarning('Reshape squeeze no good')
-                return x
+                return x, None
             else:
                 raise NotImplementedError
                
@@ -243,6 +294,6 @@ class BaselineTA3N(nn.Module):
                 normal_(weight, 0, std)
                     
         def forward(self, x):
-            BaselineTA3N.GradReverse.apply(x,self.beta)
+            x = BaselineTA3N.GradReverse.apply(x,self.beta)
             x = self.domain_classifier(x)
             return x

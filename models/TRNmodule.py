@@ -61,6 +61,7 @@ class RelationModuleMultiScale(torch.nn.Module):
         act_scale_1 = input[:, self.relations_scales[0][0] , :]
         act_scale_1 = act_scale_1.view(act_scale_1.size(0), self.scales[0] * self.img_feature_dim)
         act_scale_1 = self.fc_fusion_scales[0](act_scale_1)
+        feats = {0: act_scale_1}
         act_scale_1 = act_scale_1.unsqueeze(1) # add one dimension for the later concatenation
         act_all = act_scale_1.clone()
 
@@ -80,7 +81,8 @@ class RelationModuleMultiScale(torch.nn.Module):
                 act_relation_all += act_relation
 
             act_all = torch.cat((act_all, act_relation_all), 1)
-        return act_all
+            feats[scaleID] = act_relation_all.squeeze(1)
+        return act_all, feats
 
     def return_relationset(self, num_frames, num_frames_relation):
         import itertools

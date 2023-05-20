@@ -35,8 +35,9 @@ def init_operations():
 
     # wanbd logging configuration
     if args.wandb_name is not None:
+        wandb.login(key='5fb520f5bf470ccfb910f234718b0bebff47d47d')
         wandb.init(group=args.wandb_name, dir=args.wandb_dir)
-        wandb.run.name = args.name + "_" + args.shift.split("-")[0] + "_" + args.shift.split("-")[-1]
+        wandb.run.name = args.name + "_" + args.dataset.shift.split("-")[0] + "_" + args.dataset.shift.split("-")[-1]
 
 
 def main():
@@ -154,9 +155,6 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
             target_data, target_label = next(data_loader_target)
         end_t = datetime.now()
 
-        logger.info(f"Iteration {i}/{training_iterations} batch retrieved! Elapsed time = "
-                    f"{(end_t - start_t).total_seconds() // 60} m {(end_t - start_t).total_seconds() % 60} s")
-
         ''' Action recognition'''
         source_label = source_label.to(device)
         target_label=target_label.to(device)
@@ -184,6 +182,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
         action_classifier.compute_loss(logits, source_label, features)
         action_classifier.backward(retain_graph=False)
         action_classifier.compute_accuracy(logits, source_label)
+        action_classifier.wandb_log()
 
         # update weights and zero gradients if total_batch samples are passed
         if gradient_accumulation_step:
@@ -207,6 +206,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
                 logger.info("New best accuracy {:.2f}%".format(val_metrics['top1']))
                 action_classifier.best_iter = real_iter
                 action_classifier.best_iter_score = val_metrics['top1']
+            wandb.log(val_metrics)
 
             action_classifier.save_model(real_iter, val_metrics['top1'], prefix=None)
             action_classifier.train(True)
