@@ -103,6 +103,7 @@ def main():
                                                  num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
 
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
+    wandb.finish()
 
 
 def train(action_classifier, train_loader_source, train_loader_target, val_loader, device, num_classes):

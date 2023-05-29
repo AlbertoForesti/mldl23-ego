@@ -108,6 +108,9 @@ class ActionRecognition(tasks.Task, ABC):
 
             gsd_loss = self.criterion(pred_gsd_all, domain_label_all)
             self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
+        
+        if  self.model_args['RGB'].frame_aggregation == 'COP':
+            pass
 
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']

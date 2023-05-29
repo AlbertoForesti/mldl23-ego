@@ -1,8 +1,10 @@
 import models
 import torch
 import torch.nn as nn
+import itertools
 from torch.autograd import Function
-
+from math import factorial, comb
+from random import randint
 from torch.nn.init import normal_, constant_
 from models import TRNmodule
 from collections import OrderedDict
@@ -34,9 +36,6 @@ class BaselineTA3N(nn.Module):
        
         end_point = 'Spatial module' # just a fully connected layer
         fc_spatial_module = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
-        std = 0.001
-        constant_(fc_spatial_module.bias, 0)
-        normal_(fc_spatial_module.weight, 0, std)
 		
         self.end_points[end_point] = fc_spatial_module # spatial module is just a fully connected layer
         
@@ -67,8 +66,6 @@ class BaselineTA3N(nn.Module):
         
         end_point = 'Gy'
         fc_gy = self.FullyConnectedLayer(in_features_dim=in_features_dim, out_features_dim=in_features_dim, dropout=model_config.dropout)
-        constant_(fc_gy.bias, 0)
-        normal_(fc_gy.weight, 0, std)
 
         self.end_points[end_point] = fc_gy
 
@@ -191,6 +188,61 @@ class BaselineTA3N(nn.Module):
         def forward(self, x):
             return self.fc_layers(x)
             
+    
+    class COPNet(nn.Module):
+        def __init__(self, in_features_dim, n_clips, dropout=0.5):
+            super(BaselineTA3N.FullyConnectedLayer, self).__init__()
+            self.in_features_dim = in_features_dim
+            self.n_clips = n_clips
+            self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
+            self.num_classes = factorial(n_clips) # all possible permutations
+            self.n_relations = comb(n_clips, 2)
+            self.permutations = itertools.permutations([i for i in range(n_clips)], r=n_clips)
+            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
+        
+        def forward(self, x, num_segments):
+            shape = video.shape
+            shape[0] = 0
+            weighted_input = torch.empty(shape)
+            order_preds_all = torch.empty((0,len(self.permutations)))
+            for video in x:
+                permutation = self.permutations[randint(0,len(self.permutations)-1)]
+                permuted_video = video[permutation].clone()
+                permuted_video = permuted_video.view((-1, num_segments) + permuted_video.size()[-1:])
+                row_indices = range(permuted_video.shape[0])
+                combinations = list(itertools.combinations(row_indices, 2))
+                first_iteration = True
+                # Generate combinations of rows
+                for combination in combinations:
+                    relation_feats_concatenated = torch.cat((permuted_video[index] for index in combination))
+                    relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
+                    if first_iteration:
+                        relation_feats_fc_concatenated = relation_feats_fc
+                        first_iteration = False
+                    else:
+                        relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc))
+                order_preds = self.fc_video(relation_feats_fc_concatenated)
+                attn_weights = self.get_attn(order_preds, permutation)
+                weighted_video = (attn_weights+1) * video
+                weighted_input = torch.cat((weighted_input, weighted_video))
+                order_preds_all = torch.cat((order_preds_all, order_preds))
+            return order_preds, weighted_video
+
+        def get_attn(self, order_preds, permutation):
+            softmax = nn.Softmax(dim=1)
+            probs = softmax(order_preds)
+            weights = []
+            for new_order, original_order in enumerate(permutation):
+                correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
+                weights.append(torch.sum(probs[correct_pred_indices]))
+            return weights
+        
+        def get_correct_pred_indices(self, original_order, new_order):
+            indices = []
+            for i, permutation in enumerate(self.permutations):
+                if permutation[new_order] == original_order:
+                    indices.append(i)
+            return indices
 
     class FullyConnectedLayer(nn.Module):
         def __init__(self, in_features_dim, out_features_dim, dropout=0.5):
@@ -205,6 +257,9 @@ class BaselineTA3N(nn.Module):
             self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
             self.bias = self.fc.bias
             self.weight = self.fc.weight
+            std = 0.001
+            normal_(self.fc_classifier_video.weight, 0, std)
+            constant_(self.fc_classifier_video.bias, 0)
         
         def forward(self, x):
             x = self.fc(x)
@@ -221,9 +276,10 @@ class BaselineTA3N(nn.Module):
             self.train_segments = train_segments
             self.model_config = model_config
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if temporal_pooling == 'TemPooling':
+            if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
                 self.out_features_dim = self.in_features_dim
-                pass
+                if temporal_pooling == 'COP':
+                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout)
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
@@ -231,27 +287,34 @@ class BaselineTA3N(nn.Module):
             else:
                 raise NotImplementedError
         
+        def tempooling(self, x, num_segments):
+            x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
+            if x is None:
+                raise UserWarning('Reshape view no good')
+
+            x = nn.AvgPool2d([num_segments, 1])(x)  # e.g. 16 x 1 x 1 x 512
+
+            if x is None:
+                raise UserWarning('avgpool2d no good')
+
+            x = x.squeeze(1).squeeze(1)  # e.g. 16 x 512
+            
+            if x is None:
+                raise UserWarning('Reshape squeeze no good')
+            return x, None
+        
         def forward(self, x, num_segments, is_train=True):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
                 x, feats = self.trn(x)
                 return torch.sum(x, 1), feats
                 
-            elif self.pooling_type =="TemPooling":
-                x = x.view((-1, 1, num_segments) + x.size()[-1:])  # reshape based on the segments (e.g. 16 x 1 x 5 x 512)
-                if x is None:
-                    raise UserWarning('Reshape view no good')
+            elif self.pooling_type == "TemPooling":
+                return self.tempooling(x, num_segments)
 
-                x = nn.AvgPool2d([num_segments, 1])(x)  # e.g. 16 x 1 x 1 x 512
-
-                if x is None:
-                    raise UserWarning('avgpool2d no good')
-
-                x= x.squeeze(1).squeeze(1)  # e.g. 16 x 512
-                
-                if x is None:
-                    raise UserWarning('Reshape squeeze no good')
-                return x, None
+            elif self.pooling_type == "COP":
+                order_preds, weighted_input = self.cop(x)
+                return order_preds, self.tempooling(weighted_input, num_segments)
             else:
                 raise NotImplementedError
                
