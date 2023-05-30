@@ -210,7 +210,7 @@ class BaselineTA3N(nn.Module):
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
             self.num_classes = factorial(n_clips) # all possible permutations
             self.n_relations = comb(n_clips, 2)
-            self.permutations = itertools.permutations([i for i in range(n_clips)], r=n_clips)
+            self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=n_clips))
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
         
         def forward(self, x, num_segments):
