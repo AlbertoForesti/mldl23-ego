@@ -220,8 +220,8 @@ class BaselineTA3N(nn.Module):
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             for video in x:
                 permutation = self.permutations[randint(0,len(self.permutations)-1)]
-                raise UserWarning(f'shape of video is {video.shape}, shape of x is {x.shape}, permutation is {permutation}, order_preds_all shape is {order_preds_all.shape}')
-                permuted_video = video[permutation].clone()
+                # raise UserWarning(f'shape of video is {video.shape}, shape of x is {x.shape}, permutation is {permutation}, order_preds_all shape is {order_preds_all.shape}')
+                permuted_video = video[permutation, :].clone()
                 permuted_video = permuted_video.view((-1, num_segments) + permuted_video.size()[-1:])
                 row_indices = range(permuted_video.shape[0])
                 combinations = list(itertools.combinations(row_indices, 2))
