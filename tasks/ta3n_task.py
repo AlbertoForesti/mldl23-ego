@@ -47,6 +47,7 @@ class ActionRecognition(tasks.Task, ABC):
         self.gtd_loss = utils.AverageMeter()
         self.grd_loss = utils.AverageMeter()
         self.lae_loss = utils.AverageMeter()
+        self.cop_loss = utils.AverageMeter()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.num_clips = num_clips
@@ -110,7 +111,17 @@ class ActionRecognition(tasks.Task, ABC):
             self.gsd_loss.update(torch.mean(gsd_loss) / (self.total_batch / self.batch_size), self.batch_size) # this shouldn't be a cross-entropy loss tbh, look at paper
         
         if  self.model_args['RGB'].frame_aggregation == 'COP':
-            pass
+            pred_cop_source = features['pred_cop_source']
+            pred_cop_target = features['pred_cop_target']
+
+            label_cop_source = features['label_cop_source']
+            label_cop_target = features['label_cop_target']
+            
+            pred_cop_all = torch.cat((pred_cop_source, pred_cop_target),0)
+            label_cop_all = torch.cat((label_cop_source, label_cop_target),0)
+
+            cop_loss = self.criterion(pred_cop_all, label_cop_all)
+            self.cop_loss.update(torch.mean(cop_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
@@ -222,6 +233,9 @@ class ActionRecognition(tasks.Task, ABC):
         
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             self.grd_loss.reset()
+        
+        if  self.model_args['RGB'].frame_aggregation == 'COP':
+            self.cop_loss.reset()
 
         self.classification_loss.reset()
 
@@ -264,6 +278,9 @@ class ActionRecognition(tasks.Task, ABC):
         
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             loss += self.grd_loss.val
+
+        if  self.model_args['RGB'].frame_aggregation == 'COP':
+            loss += self.cop_loss.val
 
         loss += self.classification_loss.val
 

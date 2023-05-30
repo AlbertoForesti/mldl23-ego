@@ -111,14 +111,23 @@ class BaselineTA3N(nn.Module):
         else:
             predictions_gsd_source = None
             predictions_gsd_target = None
+        
 
-        source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
+        target = None
+        predictions_grd_target = None
+        feats_trn_target = feats_trn_source = None
+        predictions_cop_source = predictions_cop_target = None
+        labels_predictions_cop_source = labels_predictions_cop_target = None
 
-        if is_train:
-            target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
+        if self.model_config.frame_aggregation != 'COP':
+            source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
+            if is_train:
+                target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
         else:
-            target = None
-            predictions_grd_target = None
+            source, predictions_cop_source, labels_predictions_cop_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
+            if is_train:
+                target, predictions_cop_target, labels_predictions_cop_target = self._modules['Temporal module'](target, num_segments, is_train=is_train)
+        
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
             predictions_grd_source = {}
@@ -154,6 +163,7 @@ class BaselineTA3N(nn.Module):
         source = self._modules['Gy'](source)
 
         logits = self.fc_classifier_video(source)
+        predictions_clf_source = logits
         
         if is_train:
             predictions_clf_target = self.fc_classifier_video(target)
@@ -163,7 +173,9 @@ class BaselineTA3N(nn.Module):
         return logits, {"pred_gsd_source": predictions_gsd_source,"pred_gsd_target": predictions_gsd_target, \
                         "pred_gtd_source": predictions_gtd_source,"pred_gtd_target": predictions_gtd_target, \
                         "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target, \
-                        "pred_clf_target": predictions_clf_target}
+                        "pred_cop_source": predictions_cop_source,"pred_cop_target": predictions_cop_target, \
+                        "pred_clf_source": predictions_clf_source,"pred_clf_target": predictions_clf_target, \
+                        "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target}
 
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
@@ -192,6 +204,7 @@ class BaselineTA3N(nn.Module):
     class COPNet(nn.Module):
         def __init__(self, in_features_dim, n_clips, dropout=0.5):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
             self.n_clips = n_clips
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
@@ -203,8 +216,9 @@ class BaselineTA3N(nn.Module):
         def forward(self, x, num_segments):
             shape = video.shape
             shape[0] = 0
-            weighted_input = torch.empty(shape)
-            order_preds_all = torch.empty((0,len(self.permutations)))
+            weighted_input = torch.empty(shape).to(self.device)
+            order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
+            labels = torch.empty((0,len(self.permutations))).to(self.device)
             for video in x:
                 permutation = self.permutations[randint(0,len(self.permutations)-1)]
                 permuted_video = video[permutation].clone()
@@ -226,7 +240,14 @@ class BaselineTA3N(nn.Module):
                 weighted_video = (attn_weights+1) * video
                 weighted_input = torch.cat((weighted_input, weighted_video))
                 order_preds_all = torch.cat((order_preds_all, order_preds))
-            return order_preds, weighted_video
+                dist = []
+                for p in self.permutations:
+                    if p == permutation:
+                        dist.append(1)
+                    else:
+                        dist.append(0)
+                labels = torch.cat((labels, torch.Tensor(dist).to(self.device)))
+            return order_preds_all, labels, weighted_video
 
         def get_attn(self, order_preds, permutation):
             softmax = nn.Softmax(dim=1)
@@ -313,8 +334,13 @@ class BaselineTA3N(nn.Module):
                 return self.tempooling(x, num_segments)
 
             elif self.pooling_type == "COP":
-                order_preds, weighted_input = self.cop(x)
-                return order_preds, self.tempooling(weighted_input, num_segments)
+                order_preds, labels, weighted_input = self.cop(x)
+                if self.model_config.attention_cop == 'yes':
+                    return  self.tempooling(weighted_input, num_segments), order_preds, labels
+                else:
+                    return self.tempooling(x, num_segments), order_preds, labels
+                
+            
             else:
                 raise NotImplementedError
                
