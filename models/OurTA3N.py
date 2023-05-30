@@ -113,7 +113,6 @@ class BaselineTA3N(nn.Module):
             predictions_gsd_target = None
         
 
-        target = None
         predictions_grd_target = None
         feats_trn_target = feats_trn_source = None
         predictions_cop_source = predictions_cop_target = None
@@ -127,6 +126,8 @@ class BaselineTA3N(nn.Module):
             source, predictions_cop_source, labels_predictions_cop_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
             if is_train:
                 target, predictions_cop_target, labels_predictions_cop_target = self._modules['Temporal module'](target, num_segments, is_train=is_train)
+        if not is_train:
+            target=None
         
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
