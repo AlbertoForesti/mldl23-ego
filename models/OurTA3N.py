@@ -223,11 +223,11 @@ class BaselineTA3N(nn.Module):
                 # raise UserWarning(f'shape of video is {video.shape}, shape of x is {x.shape}, permutation is {permutation}, order_preds_all shape is {order_preds_all.shape}')
                 permuted_video = video[permutation, :].clone()
                 permuted_video = permuted_video.view((-1, num_segments) + permuted_video.size()[-1:])
-                row_indices = range(permuted_video.shape[0])
+                row_indices = list(range(permuted_video.shape[0]))
                 combinations = list(itertools.combinations(row_indices, 2))
                 first_iteration = True
                 # Generate combinations of rows
-                raise UserWarning(f'combinations is {combinations}, row_indices is {row_indices}')
+                # raise UserWarning(f'combinations is {combinations}, row_indices is {row_indices}')
                 for combination in combinations:
                     relation_feats_concatenated = torch.cat((permuted_video[index] for index in combination))
                     relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
