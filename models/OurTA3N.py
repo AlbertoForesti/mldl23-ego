@@ -279,8 +279,8 @@ class BaselineTA3N(nn.Module):
             self.bias = self.fc.bias
             self.weight = self.fc.weight
             std = 0.001
-            normal_(self.fc_classifier_video.weight, 0, std)
-            constant_(self.fc_classifier_video.bias, 0)
+            normal_(self.fc.weight, 0, std)
+            constant_(self.fc.bias, 0)
         
         def forward(self, x):
             x = self.fc(x)
