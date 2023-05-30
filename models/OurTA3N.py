@@ -203,7 +203,7 @@ class BaselineTA3N(nn.Module):
     
     class COPNet(nn.Module):
         def __init__(self, in_features_dim, n_clips, dropout=0.5):
-            super(BaselineTA3N.FullyConnectedLayer, self).__init__()
+            super(BaselineTA3N.COPNet, self).__init__()
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
             self.n_clips = n_clips
