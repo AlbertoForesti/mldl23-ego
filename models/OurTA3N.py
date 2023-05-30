@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import itertools
 from torch.autograd import Function
-from math import factorial, comb
+from scipy.special import factorial, comb
 from random import randint
 from torch.nn.init import normal_, constant_
 from models import TRNmodule
