@@ -243,7 +243,7 @@ class BaselineTA3N(nn.Module):
                 order_preds = self.fc_video(relation_feats_fc_concatenated)
                 attn_weights = self.get_attn(order_preds, permutation).unsqueeze(1)
                 weighted_video = (attn_weights+1) * video
-                weighted_input = torch.cat((weighted_input, weighted_video))
+                weighted_input = torch.cat((weighted_input, weighted_video.unsqueeze(0)))
                 order_preds_all = torch.cat((order_preds_all, order_preds))
                 dist = []
                 for p in self.permutations:
