@@ -342,9 +342,11 @@ class BaselineTA3N(nn.Module):
             elif self.pooling_type == "COP":
                 order_preds, labels, weighted_input = self.cop(x, self.train_segments)
                 if self.model_config.attention_cop == 'yes':
-                    return  self.tempooling(weighted_input, num_segments), order_preds, labels
+                    x, _ = self.tempooling(weighted_input, num_segments)
+                    return  x, order_preds, labels
                 else:
-                    return self.tempooling(x, num_segments), order_preds, labels
+                    x, _ = self.tempooling(x, num_segments)
+                    return x, order_preds, labels
                 
             
             else:
