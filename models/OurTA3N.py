@@ -242,7 +242,6 @@ class BaselineTA3N(nn.Module):
                         relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc))
                 order_preds = self.fc_video(relation_feats_fc_concatenated)
                 attn_weights = self.get_attn(order_preds, permutation)
-                raise UserWarning(f'video shape is {video.shape}')
                 weighted_video = (attn_weights+1) * video
                 weighted_input = torch.cat((weighted_input, weighted_video))
                 order_preds_all = torch.cat((order_preds_all, order_preds))
