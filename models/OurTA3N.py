@@ -229,7 +229,8 @@ class BaselineTA3N(nn.Module):
                 # Generate combinations of rows
                 # raise UserWarning(f'combinations is {combinations}, row_indices is {row_indices}, permuted_video shape is {permuted_video.shape}')
                 for combination in combinations:
-                    relation_feats_concatenated = torch.cat((permuted_video[index] for index in combination))
+                    tensors = (permuted_video[index] for index in combination)
+                    relation_feats_concatenated = torch.cat(tensors)
                     relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
                     if first_iteration:
                         relation_feats_fc_concatenated = relation_feats_fc
