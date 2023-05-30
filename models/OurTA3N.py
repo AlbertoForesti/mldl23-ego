@@ -251,7 +251,7 @@ class BaselineTA3N(nn.Module):
                         dist.append(1)
                     else:
                         dist.append(0)
-                labels = torch.cat((labels, torch.Tensor(dist).to(self.device)))
+                labels = torch.cat((labels, torch.Tensor(dist).to(self.device).unsqueeze(0)))
             return order_preds_all, labels, weighted_video
 
         def get_attn(self, order_preds, permutation):
