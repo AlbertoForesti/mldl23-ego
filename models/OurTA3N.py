@@ -214,7 +214,7 @@ class BaselineTA3N(nn.Module):
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
         
         def forward(self, x, num_segments):
-            shape = video.shape
+            shape = x.shape
             shape[0] = 0
             weighted_input = torch.empty(shape).to(self.device)
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
