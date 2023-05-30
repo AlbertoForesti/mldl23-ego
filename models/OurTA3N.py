@@ -261,7 +261,7 @@ class BaselineTA3N(nn.Module):
             for new_order, original_order in enumerate(permutation):
                 correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
                 weights.append(torch.sum(probs[correct_pred_indices]))
-            return weights
+            return torch.Tensor(weights).to(self.device)
         
         def get_correct_pred_indices(self, original_order, new_order):
             indices = []
