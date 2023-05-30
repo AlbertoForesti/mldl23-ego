@@ -255,7 +255,7 @@ class BaselineTA3N(nn.Module):
             return order_preds_all, labels, weighted_video
 
         def get_attn(self, order_preds, permutation):
-            softmax = nn.Softmax(dim=1)
+            softmax = nn.Softmax()
             probs = softmax(order_preds)
             weights = []
             for new_order, original_order in enumerate(permutation):
