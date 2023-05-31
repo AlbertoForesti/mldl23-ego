@@ -42,7 +42,7 @@ def init_operations():
             'clip_aggregation': args.models['RGB'].frame_aggregation, 
             'blocks': args.models['RGB'].blocks,
             'attention_grd': args.models['RGB'].attention,
-            'attention_cop': args.models['RGB'].attention_cop
+            'attention_cop': args.models['RGB'].attention_cop,
             'shift': args.dataset.shift}
         if 'Gsd' in args.models['RGB'].blocks:
             config['beta0'] = args.models['RGB'].beta0
