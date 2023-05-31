@@ -220,54 +220,50 @@ class BaselineTA3N(nn.Module):
             weighted_input = torch.empty((0,)+ shape[1:]).to(self.device)
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
             labels = torch.empty((0,len(self.permutations))).to(self.device)
-            for video in x:
-                permutation = self.permutations[randint(0,len(self.permutations)-1)]
-                # raise UserWarning(f'shape of video is {video.shape}, shape of x is {x.shape}, permutation is {permutation}, order_preds_all shape is {order_preds_all.shape}')
-                permuted_video = video[permutation, :]
-                # permuted_video = permuted_video.view((-1, num_segments) + permuted_video.size()[-1:])
-                row_indices = list(range(permuted_video.shape[0]))
-                combinations = list(itertools.combinations(row_indices, 2))
-                first_iteration = True
-                # Generate combinations of rows
-                # raise UserWarning(f'combinations is {combinations}, row_indices is {row_indices}, permuted_video shape is {permuted_video.shape}')
-                for combination in combinations:
-                    # tensors = (permuted_video[index, :] for index in combination)
-                    tensors = ()
-                    for index in combination:
-                        tensors = tensors + (permuted_video[index, :],)
-                    relation_feats_concatenated = torch.cat(tensors)
-                    relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
-                    if first_iteration:
-                        relation_feats_fc_concatenated = relation_feats_fc
-                        first_iteration = False
-                    else:
-                        relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc))
-                order_preds = self.fc_video(relation_feats_fc_concatenated)
-                if self.attention:
-                    attn_weights = self.get_attn(order_preds, permutation).unsqueeze(1)
-                    weighted_video = (attn_weights+1) * video
-                    weighted_input = torch.cat((weighted_input, weighted_video.unsqueeze(0)))
-                order_preds_all = torch.cat((order_preds_all, order_preds.unsqueeze(0)))
-                dist = []
-                for p in self.permutations:
-                    if p == permutation:
-                        dist.append(1)
-                    else:
-                        dist.append(0)
-                labels = torch.cat((labels, torch.Tensor(dist).to(self.device).unsqueeze(0)))
+            permutation = self.permutations[randint(0,len(self.permutations)-1)]
+            permuted_video = x[:, permutation, :]
+            row_indices = list(range(permuted_video.shape[0]))
+            combinations = list(itertools.combinations(row_indices, 2))
+            
+            first_iteration = True
+            for combination in combinations:
+                tensors = ()
+                for index in combination:
+                    tensors = tensors + (permuted_video[:, index, :],)
+                relation_feats_concatenated = torch.cat(tensors, 1)
+                relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
+                if first_iteration:
+                    relation_feats_fc_concatenated = relation_feats_fc
+                    first_iteration = False
+                else:
+                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)
+            order_preds_all = self.fc_video(relation_feats_fc_concatenated)
+            dist = []
+            for p in self.permutations:
+                if p == permutation:
+                    dist.append(1)
+                else:
+                    dist.append(0)
+            dist = torch.Tensor(dist).to(self.device)
+            labels = dist.repeat(x.shape[0],1)
+            
             if self.attention:
-                return order_preds_all, labels, weighted_video
+                attn_weights = self.get_attn(order_preds_all, permutation)
+                weighted_input = (attn_weights+1).t() * x
+            
+            if self.attention:
+                return order_preds_all, labels, weighted_input
             else:
                 return order_preds_all, labels, x
 
         def get_attn(self, order_preds, permutation):
-            softmax = nn.Softmax()
-            probs = softmax(order_preds)
-            weights = []
-            for new_order, original_order in enumerate(permutation):
+            softmax = nn.Softmax(dim=1)
+            probs = softmax(order_preds) #32 x 120
+            weights = torch.empty((0,32)).to(self.device) # 5 x 32
+            for new_order, original_order in enumerate(permutation): # iterates 5 times (number of clips in video)
                 correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
-                weights.append(torch.sum(probs[correct_pred_indices]))
-            return torch.Tensor(weights).to(self.device)
+                weights = torch.cat((weights, torch.sum(probs[:,correct_pred_indices], dim=1)))
+            return weights
         
         def get_correct_pred_indices(self, original_order, new_order):
             indices = []
