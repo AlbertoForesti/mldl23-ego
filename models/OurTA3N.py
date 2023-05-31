@@ -203,7 +203,7 @@ class BaselineTA3N(nn.Module):
             
     
     class COPNet(nn.Module):
-        def __init__(self, in_features_dim, n_clips, dropout=0.5):
+        def __init__(self, in_features_dim, n_clips, dropout=0.5, attention=False):
             super(BaselineTA3N.COPNet, self).__init__()
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
@@ -213,6 +213,7 @@ class BaselineTA3N(nn.Module):
             self.n_relations = comb(n_clips, 2, exact=True)
             self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=n_clips))
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
+            self.attention = attention
         
         def forward(self, x, num_segments):
             shape = x.shape
@@ -242,9 +243,10 @@ class BaselineTA3N(nn.Module):
                     else:
                         relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc))
                 order_preds = self.fc_video(relation_feats_fc_concatenated)
-                attn_weights = self.get_attn(order_preds, permutation).unsqueeze(1)
-                weighted_video = (attn_weights+1) * video
-                weighted_input = torch.cat((weighted_input, weighted_video.unsqueeze(0)))
+                if self.attention:
+                    attn_weights = self.get_attn(order_preds, permutation).unsqueeze(1)
+                    weighted_video = (attn_weights+1) * video
+                    weighted_input = torch.cat((weighted_input, weighted_video.unsqueeze(0)))
                 order_preds_all = torch.cat((order_preds_all, order_preds.unsqueeze(0)))
                 dist = []
                 for p in self.permutations:
@@ -253,7 +255,10 @@ class BaselineTA3N(nn.Module):
                     else:
                         dist.append(0)
                 labels = torch.cat((labels, torch.Tensor(dist).to(self.device).unsqueeze(0)))
-            return order_preds_all, labels, weighted_video
+            if self.attention:
+                return order_preds_all, labels, weighted_video
+            else:
+                return order_preds_all, labels, x
 
         def get_attn(self, order_preds, permutation):
             softmax = nn.Softmax()
@@ -306,7 +311,7 @@ class BaselineTA3N(nn.Module):
             if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
                 self.out_features_dim = self.in_features_dim
                 if temporal_pooling == 'COP':
-                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout)
+                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout, attention=(model_config.attention_cop=='yes'))
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)

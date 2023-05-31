@@ -63,6 +63,7 @@ models:
     beta1: 0.75
     beta2: 0.5
     gamma: 0.3
+    delta: 0.75
     attention: no
     attention_cop: no
     batch_normalization: True

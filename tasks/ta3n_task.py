@@ -274,16 +274,14 @@ class ActionRecognition(tasks.Task, ABC):
         if 'Gtd' in self.model_args['RGB'].blocks:
             loss += self.gtd_loss.val
             if 'ta3n' in self.model_args['RGB'].blocks:
-                loss += self.lae_loss.val
+                loss += self.model_args['RGB'].gamma * self.lae_loss.val
         
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             loss += self.grd_loss.val
 
         if  self.model_args['RGB'].frame_aggregation == 'COP':
-            loss += self.cop_loss.val
+            loss += self.model_args['RGB'].delta*self.cop_loss.val
 
         loss += self.classification_loss.val
-
-        loss += self.model_args['RGB'].gamma * self.lae_loss.val
 
         loss.backward(retain_graph=retain_graph)
