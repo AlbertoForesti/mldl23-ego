@@ -36,7 +36,19 @@ def init_operations():
     # wanbd logging configuration
     if args.wandb_name is not None:
         wandb.login(key='5fb520f5bf470ccfb910f234718b0bebff47d47d')
-        wandb.init(group=args.wandb_name, dir=args.wandb_dir, config=args.models['RGB'])
+        config = {'lr': args.models['RGB'].lr, 'dropout': args.models['RGB'].dropout, 'clip_aggregation': args.models['RGB'].frame_aggregation, 'blocks': args.models['RGB'].blocks}
+        if 'Gsd' in args.models['RGB'].blocks:
+            config['beta0'] = args.models['RGB'].beta0
+        if 'Gtd' in args.models['RGB'].blocks:
+            config['beta1'] = args.models['RGB'].beta1
+        if 'Grd' in args.models['RGB'].blocks:
+            config['beta2'] = args.models['RGB'].beta2
+        if 'Grd' in args.models['RGB'] and args.models['RGB'].attention:
+            config['gamma'] = args.models['RGB'].gamma
+        if args.models['RGB'].frame_aggregation == 'COP':
+            config['delta'] = args.models['RGB'].delta
+
+        wandb.init(group=args.wandb_name, dir=args.wandb_dir, config=config)
         wandb.run.name = args.name + "_" + args.dataset.shift.split("-")[0] + "_" + args.dataset.shift.split("-")[-1]
 
 
