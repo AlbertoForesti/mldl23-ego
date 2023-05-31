@@ -210,9 +210,11 @@ class ActionRecognition(tasks.Task, ABC):
             'top1-accuracy': self.accuracy.avg[1],
             'top5-accuracy': self.accuracy.avg[5]
         }
-
+        a = self.model_args['RGB'].attention_cop
+        b = a == 'Yes'
+        raise UserWarning(f'self.model_args[\'RGB\'].attention_cop is {a} and {b}')
         if self.model_args['RGB'].attention_cop == 'Yes':
-            raise UserWarning('DEBUG')
+            
             for i in range(5):
                 logs[f'attn_cop_{i}']=self.attn_cop_weights[i].avg
 
