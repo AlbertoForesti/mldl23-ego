@@ -214,7 +214,7 @@ class ActionRecognition(tasks.Task, ABC):
         if self.model_args['RGB'].attention_cop:
             
             for i in range(5):
-                logs[f'attn_cop_{i}']=self.attn_cop_weights[i].avg
+                logs[f'attn_cop_{i}']=self.attn_cop_weights[i].val
 
         # Log the learning rate, separately for each modality.
         for m in self.modalities:
