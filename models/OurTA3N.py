@@ -181,7 +181,7 @@ class BaselineTA3N(nn.Module):
         logits = self.fc_classifier_video(feats_gy_source)
         predictions_clf_source = logits
 
-        raise UserWarning(f'source = {source.shape}, gy source = {feats_gy_source.shape}, logits = {logits.shape}')
+        # raise UserWarning(f'source = {source.shape}, gy source = {feats_gy_source.shape}, logits = {logits.shape}')
         
         if is_train:
             predictions_clf_target = self.fc_classifier_video(target)
