@@ -165,9 +165,9 @@ class BaselineTA3N(nn.Module):
                 target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
 
         
-        torch.sum(source, 1)
+        source = torch.sum(source, 1)
         if is_train:
-            torch.sum(target, 1)
+            target = torch.sum(target, 1)
 
         if 'Gtd' in self.end_points and is_train:
             predictions_gtd_source = self._modules['Gtd'](source)
