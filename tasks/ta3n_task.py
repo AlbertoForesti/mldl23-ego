@@ -212,6 +212,7 @@ class ActionRecognition(tasks.Task, ABC):
         }
 
         if self.model_args['RGB'].attention_cop == 'Yes':
+            raise UserWarning('DEBUG')
             for i in range(5):
                 logs[f'attn_cop_{i}']=self.attn_cop_weights[i].avg
 
