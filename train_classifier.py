@@ -36,7 +36,13 @@ def init_operations():
     # wanbd logging configuration
     if args.wandb_name is not None:
         wandb.login(key='5fb520f5bf470ccfb910f234718b0bebff47d47d')
-        config = {'lr': args.models['RGB'].lr, 'dropout': args.models['RGB'].dropout, 'clip_aggregation': args.models['RGB'].frame_aggregation, 'blocks': args.models['RGB'].blocks}
+        config = {
+            'lr': args.models['RGB'].lr,
+            'dropout': args.models['RGB'].dropout, 
+            'clip_aggregation': args.models['RGB'].frame_aggregation, 
+            'blocks': args.models['RGB'].blocks,
+            'attention_grd': args.models['RGB'].attention,
+            'attention_cop': args.models['RGB'].attention_cop}
         if 'Gsd' in args.models['RGB'].blocks:
             config['beta0'] = args.models['RGB'].beta0
         if 'Gtd' in args.models['RGB'].blocks:
