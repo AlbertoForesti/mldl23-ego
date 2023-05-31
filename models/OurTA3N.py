@@ -267,7 +267,7 @@ class BaselineTA3N(nn.Module):
 
             if self.attention:
                 attn_weights = self.get_attn(order_preds_all, permutation)
-                weighted_input = (attn_weights+1).t() * x
+                weighted_input = (attn_weights+1).t().unsqueeze(2).repeat(1,1,x.shape[-1]) * x
             
             if self.attention:
                 return order_preds_all, labels, weighted_input, attn_weights.mean(dim=1)
@@ -280,9 +280,9 @@ class BaselineTA3N(nn.Module):
             weights = torch.empty((0,32)).to(self.device) # 5 x 32
             for new_order, original_order in enumerate(permutation): # iterates 5 times (number of clips in video)
                 correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
-                probs_weird = torch.sum(probs[:,correct_pred_indices], dim=1)
+                probs_weird = torch.sum(probs[:,correct_pred_indices], dim=1).unsqueeze(0)
                 raise UserWarning(f'weights={weights.shape}, probs={probs.shape}, probs_weird = {probs_weird.shape}')
-                weights = torch.cat((weights, torch.sum(probs[:,correct_pred_indices], dim=1)))
+                weights = torch.cat((weights, probs_weird))
             return weights
         
         def get_correct_pred_indices(self, original_order, new_order):
