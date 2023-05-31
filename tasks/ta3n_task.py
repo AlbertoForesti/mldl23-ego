@@ -48,6 +48,9 @@ class ActionRecognition(tasks.Task, ABC):
         self.grd_loss = utils.AverageMeter()
         self.lae_loss = utils.AverageMeter()
         self.cop_loss = utils.AverageMeter()
+
+        self.attn_cop_weights = [utils.AverageMeter() for i in range(5)]
+
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.num_clips = num_clips
@@ -122,6 +125,10 @@ class ActionRecognition(tasks.Task, ABC):
 
             cop_loss = self.criterion(pred_cop_all, label_cop_all)
             self.cop_loss.update(torch.mean(cop_loss) / (self.total_batch / self.batch_size), self.batch_size)
+
+            if self.model_args['RGB'].attention_cop == 'yes':
+                for i in range(5):
+                    self.attn_cop_weights[i].update(features['attn_weights_cop'][i])
 
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
@@ -203,6 +210,9 @@ class ActionRecognition(tasks.Task, ABC):
             'top1-accuracy': self.accuracy.avg[1],
             'top5-accuracy': self.accuracy.avg[5]
         }
+
+        if self.model_args['RGB'].attention_cop == 'yes':
+            logs['attn_cop']={f'attn_{i}': self.attn_cop_weights[i].val for i in range(5)}
 
         # Log the learning rate, separately for each modality.
         for m in self.modalities:

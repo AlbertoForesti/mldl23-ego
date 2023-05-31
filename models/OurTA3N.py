@@ -117,15 +117,16 @@ class BaselineTA3N(nn.Module):
         feats_trn_target = feats_trn_source = None
         predictions_cop_source = predictions_cop_target = None
         labels_predictions_cop_source = labels_predictions_cop_target = None
+        attn_weights_cop = None
 
         if self.model_config.frame_aggregation != 'COP':
             source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
             if is_train:
                 target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
         else:
-            source, predictions_cop_source, labels_predictions_cop_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
+            source, predictions_cop_source, labels_predictions_cop_source, attn_weights_cop = self._modules['Temporal module'](source, num_segments, is_train=is_train)
             if is_train:
-                target, predictions_cop_target, labels_predictions_cop_target = self._modules['Temporal module'](target, num_segments, is_train=is_train)
+                target, predictions_cop_target, labels_predictions_cop_target, _ = self._modules['Temporal module'](target, num_segments, is_train=is_train)
         if not is_train:
             target=None
         
@@ -176,7 +177,8 @@ class BaselineTA3N(nn.Module):
                         "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target, \
                         "pred_cop_source": predictions_cop_source,"pred_cop_target": predictions_cop_target, \
                         "pred_clf_source": predictions_clf_source,"pred_clf_target": predictions_clf_target, \
-                        "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target}
+                        "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target, \
+                        "attn_weights_cop": attn_weights_cop}
 
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
@@ -249,12 +251,12 @@ class BaselineTA3N(nn.Module):
 
             if self.attention:
                 attn_weights = self.get_attn(order_preds_all, permutation)
-                weighted_input = (attn_weights).t() * x
+                weighted_input = (attn_weights+1).t() * x
             
             if self.attention:
-                return order_preds_all, labels, weighted_input
+                return order_preds_all, labels, weighted_input, attn_weights.mean(dim=1)
             else:
-                return order_preds_all, labels, x
+                return order_preds_all, labels, x, None
 
         def get_attn(self, order_preds, permutation):
             softmax = nn.Softmax(dim=1)
@@ -341,15 +343,13 @@ class BaselineTA3N(nn.Module):
                 return self.tempooling(x, num_segments)
 
             elif self.pooling_type == "COP":
-                order_preds, labels, weighted_input = self.cop(x, self.train_segments)
+                order_preds, labels, weighted_input, attn_weights = self.cop(x, self.train_segments)
                 if self.model_config.attention_cop == 'Yes':
                     x, _ = self.tempooling(weighted_input, num_segments)
-                    return  x, order_preds, labels
+                    return  x, order_preds, labels, attn_weights
                 else:
                     x, _ = self.tempooling(x, num_segments)
-                    return x, order_preds, labels
-                
-            
+                    return x, order_preds, labels, attn_weights
             else:
                 raise NotImplementedError
                
