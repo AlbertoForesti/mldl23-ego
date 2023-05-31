@@ -126,7 +126,7 @@ class ActionRecognition(tasks.Task, ABC):
             cop_loss = self.criterion(pred_cop_all, label_cop_all)
             self.cop_loss.update(torch.mean(cop_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
-            if self.model_args['RGB'].attention_cop == 'yes':
+            if self.model_args['RGB'].attention_cop == 'Yes':
                 for i in range(5):
                     self.attn_cop_weights[i].update(features['attn_weights_cop'][i])
 
@@ -212,7 +212,8 @@ class ActionRecognition(tasks.Task, ABC):
         }
 
         if self.model_args['RGB'].attention_cop == 'Yes':
-            logs['attn_cop']={f'attn_{i}': self.attn_cop_weights[i].val for i in range(5)}
+            for i in range(5):
+                logs[f'attn_cop_{i}']=self.attn_cop_weights[i].avg
 
         # Log the learning rate, separately for each modality.
         for m in self.modalities:
