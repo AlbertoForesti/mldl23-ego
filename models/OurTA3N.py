@@ -92,9 +92,8 @@ class BaselineTA3N(nn.Module):
     def get_attn_feat_relation(self, feat_fc, pred_domain, num_segments):
         weights_attn = self.get_trans_attn(pred_domain)
 
-        raise UserWarning(f'Dimensions are weights_attn={weights_attn.shape}, feat_fc={feat_fc.shape}')
         weights_attn = weights_attn.view(-1, num_segments-1, 1).repeat(1,1,feat_fc.size()[-1]) # reshape & repeat weights (e.g. 16 x 4 x 256)
-        
+        raise UserWarning(f'Dimensions are weights_attn={weights_attn.shape}, feat_fc={feat_fc.shape}')
         feat_fc_attn = (weights_attn+1) * feat_fc
 
         return feat_fc_attn, weights_attn[:,:,0]
@@ -134,14 +133,13 @@ class BaselineTA3N(nn.Module):
         
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
-            predictions_grd_source = {}
+            
+            predictions_grd_source = self._modules[f'Grd_{i}'](feats_trn_source)
             for i, feats_trn_source_single_scale in enumerate(feats_trn_source.values()):
                 predictions_grd_source[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_source_single_scale)
 
             if is_train:
-                predictions_grd_target = {}
-                for i, feats_trn_target_single_scale in enumerate(feats_trn_target.values()):
-                    predictions_grd_target[f'Grd_{i}'] = self._modules[f'Grd_{i}'](feats_trn_target_single_scale)
+                predictions_grd_target = self._modules[f'Grd_{i}'](feats_trn_target)
             else:
                 predictions_grd_target = None
         else:
@@ -150,19 +148,11 @@ class BaselineTA3N(nn.Module):
         
         if self.model_config.attention:
 
-            tensors = ()
-            for pred in predictions_grd_source.values():
-                tensors = tensors + (pred.view(-1,1,2),)
-
-            pred_fc_domain_relation_video_source = torch.cat(tensors,1).view(-1,2)
+            pred_fc_domain_relation_video_source = torch.cat(predictions_grd_source,1).view(-1,2)
             source, _ = self.get_attn_feat_relation(feats_trn_source, pred_fc_domain_relation_video_source, num_segments)
 
             if is_train:
-                tensors = ()
-                for pred in predictions_grd_target.values():
-                    tensors = tensors + (pred.view(-1,1,2),)
-
-                pred_fc_domain_relation_video_target = torch.cat(tensors,1).view(-1,2)
+                pred_fc_domain_relation_video_target = torch.cat(predictions_grd_target,1).view(-1,2)
                 target, _ = self.get_attn_feat_relation(feats_trn_target, pred_fc_domain_relation_video_target, num_segments)
 
         if 'Gtd' in self.end_points and is_train:
@@ -347,7 +337,7 @@ class BaselineTA3N(nn.Module):
             if self.pooling_type == 'TemRelation':
                 x = x.view((-1, num_segments) + x.size()[-1:])
                 x, feats = self.trn(x)
-                return torch.sum(x, 1), feats
+                return torch.sum(x, 1), x
                 
             elif self.pooling_type == "TemPooling":
                 return self.tempooling(x, num_segments)
