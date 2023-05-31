@@ -148,13 +148,17 @@ class BaselineTA3N(nn.Module):
         
         if self.model_config.attention:
 
-            tensors = (pred.view(-1,1,2) for pred in predictions_grd_source.values())
+            tensors = ()
+            for pred in predictions_grd_source.values():
+                tensors = tensors + (pred.view(-1,1,2),)
 
             pred_fc_domain_relation_video_source = torch.cat(tensors,1).view(-1,2)
             source, _ = self.get_attn_feat_relation(source, pred_fc_domain_relation_video_source, num_segments)
 
             if is_train:
-                tensors = (pred.view(-1,1,2) for pred in predictions_grd_target.values())
+                tensors = ()
+                for pred in predictions_grd_target.values():
+                    tensors = tensors + (pred.view(-1,1,2),)
 
                 pred_fc_domain_relation_video_target = torch.cat(tensors,1).view(-1,2)
                 target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
