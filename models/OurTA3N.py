@@ -146,7 +146,7 @@ class BaselineTA3N(nn.Module):
             predictions_grd_source = None
             predictions_grd_target = None
         
-        if self.model_config.attention == 'Yes':
+        if self.model_config.attention:
 
             pred_fc_domain_relation_video_source = torch.cat((pred.view(-1,1,2) for pred in predictions_grd_source.values()),1).view(-1,2)
             source, _ = self.get_attn_feat_relation(source, pred_fc_domain_relation_video_source, num_segments)
@@ -309,7 +309,7 @@ class BaselineTA3N(nn.Module):
             if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
                 self.out_features_dim = self.in_features_dim
                 if temporal_pooling == 'COP':
-                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout, attention=(model_config.attention_cop=='Yes'))
+                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout, attention=model_config.attention_cop)
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
@@ -344,7 +344,7 @@ class BaselineTA3N(nn.Module):
 
             elif self.pooling_type == "COP":
                 order_preds, labels, weighted_input, attn_weights = self.cop(x, self.train_segments)
-                if self.model_config.attention_cop == 'Yes':
+                if self.model_config.attention_cop:
                     x, _ = self.tempooling(weighted_input, num_segments)
                     return  x, order_preds, labels, attn_weights
                 else:

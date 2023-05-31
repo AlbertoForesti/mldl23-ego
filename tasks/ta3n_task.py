@@ -126,7 +126,7 @@ class ActionRecognition(tasks.Task, ABC):
             cop_loss = self.criterion(pred_cop_all, label_cop_all)
             self.cop_loss.update(torch.mean(cop_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
-            if self.model_args['RGB'].attention_cop == 'Yes':
+            if self.model_args['RGB'].attention_cop:
                 for i in range(5):
                     self.attn_cop_weights[i].update(features['attn_weights_cop'][i])
 
