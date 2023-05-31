@@ -93,7 +93,7 @@ class BaselineTA3N(nn.Module):
         weights_attn = self.get_trans_attn(pred_domain)
 
         weights_attn = weights_attn.view(-1, num_segments-1, 1).repeat(1,1,feat_fc.size()[-1]) # reshape & repeat weights (e.g. 16 x 4 x 256)
-        raise UserWarning(f'Dimensions are weights_attn={weights_attn.shape}, feat_fc={feat_fc.shape}')
+        # raise UserWarning(f'Dimensions are weights_attn={weights_attn.shape}, feat_fc={feat_fc.shape}')
         feat_fc_attn = (weights_attn+1) * feat_fc
 
         return feat_fc_attn, weights_attn[:,:,0]
