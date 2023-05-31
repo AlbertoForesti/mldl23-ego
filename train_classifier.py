@@ -36,16 +36,13 @@ def init_operations():
     # wanbd logging configuration
     if args.wandb_name is not None:
         wandb.login(key='5fb520f5bf470ccfb910f234718b0bebff47d47d')
-        wandb.init(group=args.wandb_name, dir=args.wandb_dir)
+        wandb.init(group=args.wandb_name, dir=args.wandb_dir, config=args)
         wandb.run.name = args.name + "_" + args.dataset.shift.split("-")[0] + "_" + args.dataset.shift.split("-")[-1]
 
 
 def main():
     global training_iterations, modalities
     init_operations()
-
-    if args.wandb_name is not None:
-        wandb.config.update(args)
 
     modalities = args.modality
 

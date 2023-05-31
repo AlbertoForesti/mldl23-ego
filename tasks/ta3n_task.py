@@ -211,7 +211,7 @@ class ActionRecognition(tasks.Task, ABC):
             'top5-accuracy': self.accuracy.avg[5]
         }
 
-        if self.model_args['RGB'].attention_cop == 'yes':
+        if self.model_args['RGB'].attention_cop == 'Yes':
             logs['attn_cop']={f'attn_{i}': self.attn_cop_weights[i].val for i in range(5)}
 
         # Log the learning rate, separately for each modality.
