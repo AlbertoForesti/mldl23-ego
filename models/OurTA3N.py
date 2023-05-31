@@ -249,7 +249,7 @@ class BaselineTA3N(nn.Module):
 
             if self.attention:
                 attn_weights = self.get_attn(order_preds_all, permutation)
-                weighted_input = (attn_weights+1).t() * x
+                weighted_input = (attn_weights).t() * x
             
             if self.attention:
                 return order_preds_all, labels, weighted_input
