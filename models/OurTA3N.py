@@ -280,6 +280,8 @@ class BaselineTA3N(nn.Module):
             weights = torch.empty((0,32)).to(self.device) # 5 x 32
             for new_order, original_order in enumerate(permutation): # iterates 5 times (number of clips in video)
                 correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
+                probs_weird = torch.sum(probs[:,correct_pred_indices], dim=1)
+                raise UserWarning(f'weights={weights.shape}, probs={probs.shape}, probs_weird = {probs_weird.shape}')
                 weights = torch.cat((weights, torch.sum(probs[:,correct_pred_indices], dim=1)))
             return weights
         
