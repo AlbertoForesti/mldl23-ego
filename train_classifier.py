@@ -45,17 +45,7 @@ def main():
     init_operations()
 
     if args.wandb_name is not None:
-        wandb.config = {
-            'lr': args.models['RGB'].lr,
-            'dropout': args.models['RGB'].dropout,
-            'beta0': args.models['RGB'].beta0,
-            'beta1': args.models['RGB'].beta1,
-            'beta2': args.models['RGB'].beta2,
-            'gamma': args.models['RGB'].gamma,
-            'delta': args.models['RGB'].delta,
-            'attention': args.models['RGB'].attention,
-            'attention_cop': args.models['RGB'].attention_cop
-        }
+        wandb.config.update(args)
 
     modalities = args.modality
 
