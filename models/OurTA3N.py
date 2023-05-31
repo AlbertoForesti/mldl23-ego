@@ -164,7 +164,7 @@ class BaselineTA3N(nn.Module):
                 pred_fc_domain_relation_video_target = torch.cat(tensors,1).view(-1,2)
                 target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
 
-        raise UserWarning(f'Source dim is {source.shape}')
+        
         torch.sum(source, 1)
         if is_train:
             torch.sum(target, 1)
@@ -175,11 +175,13 @@ class BaselineTA3N(nn.Module):
         else:
             predictions_gtd_source = None
             predictions_gtd_target = None
-            
-        source = self._modules['Gy'](source)
+        
+        feats_gy_source = self._modules['Gy'](source)
 
-        logits = self.fc_classifier_video(source)
+        logits = self.fc_classifier_video(feats_gy_source)
         predictions_clf_source = logits
+
+        raise UserWarning(f'source = {source.shape}, gy source = {feats_gy_source.shape}, logits = {logits.shape}')
         
         if is_train:
             predictions_clf_target = self.fc_classifier_video(target)
