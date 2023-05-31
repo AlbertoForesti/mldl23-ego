@@ -208,12 +208,11 @@ class BaselineTA3N(nn.Module):
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
             self.n_clips = n_clips
-            
-            self.num_bottleneck = 512
-            self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.n_clips)
-            self.out_features_dim = self.num_bottleneck
-        
-            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_clips*self.num_bottleneck, out_features_dim=len(self.permutations))
+            self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
+            self.num_classes = factorial(n_clips, exact=True) # all possible permutations
+            self.n_relations = comb(n_clips, 2, exact=True)
+            self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=n_clips))
+            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
             self.attention = attention
         
         def forward(self, x, num_segments):
