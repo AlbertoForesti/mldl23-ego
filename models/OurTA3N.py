@@ -208,11 +208,12 @@ class BaselineTA3N(nn.Module):
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
             self.n_clips = n_clips
-            self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
-            self.num_classes = factorial(n_clips, exact=True) # all possible permutations
-            self.n_relations = comb(n_clips, 2, exact=True)
-            self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=n_clips))
-            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
+            
+            self.num_bottleneck = 512
+            self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.n_clips)
+            self.out_features_dim = self.num_bottleneck
+        
+            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_clips*self.num_bottleneck, out_features_dim=len(self.permutations))
             self.attention = attention
         
         def forward(self, x, num_segments):
@@ -223,7 +224,7 @@ class BaselineTA3N(nn.Module):
             for video in x:
                 permutation = self.permutations[randint(0,len(self.permutations)-1)]
                 # raise UserWarning(f'shape of video is {video.shape}, shape of x is {x.shape}, permutation is {permutation}, order_preds_all shape is {order_preds_all.shape}')
-                permuted_video = video[permutation, :].clone()
+                permuted_video = video[permutation, :]
                 # permuted_video = permuted_video.view((-1, num_segments) + permuted_video.size()[-1:])
                 row_indices = list(range(permuted_video.shape[0]))
                 combinations = list(itertools.combinations(row_indices, 2))
@@ -311,7 +312,7 @@ class BaselineTA3N(nn.Module):
             if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
                 self.out_features_dim = self.in_features_dim
                 if temporal_pooling == 'COP':
-                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout, attention=(model_config.attention_cop=='yes'))
+                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout, attention=(model_config.attention_cop=='Yes'))
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
@@ -346,7 +347,7 @@ class BaselineTA3N(nn.Module):
 
             elif self.pooling_type == "COP":
                 order_preds, labels, weighted_input = self.cop(x, self.train_segments)
-                if self.model_config.attention_cop == 'yes':
+                if self.model_config.attention_cop == 'Yes':
                     x, _ = self.tempooling(weighted_input, num_segments)
                     return  x, order_preds, labels
                 else:
