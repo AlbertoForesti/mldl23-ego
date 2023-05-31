@@ -65,6 +65,6 @@ models:
     gamma: 0.3
     delta: 0.75
     attention: False
-    attention_cop: True
+    attention_cop: False
     batch_normalization: True
 
