@@ -222,7 +222,7 @@ class BaselineTA3N(nn.Module):
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             permutation = self.permutations[randint(0,len(self.permutations)-1)]
             permuted_video = x[:, permutation, :]
-            row_indices = list(range(permuted_video.shape[0]))
+            row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
             
             first_iteration = True
@@ -246,7 +246,7 @@ class BaselineTA3N(nn.Module):
                     dist.append(0)
             dist = torch.Tensor(dist).to(self.device)
             labels = dist.repeat(x.shape[0],1)
-            
+
             if self.attention:
                 attn_weights = self.get_attn(order_preds_all, permutation)
                 weighted_input = (attn_weights+1).t() * x
