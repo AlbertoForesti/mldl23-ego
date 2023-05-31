@@ -164,6 +164,7 @@ class BaselineTA3N(nn.Module):
                 pred_fc_domain_relation_video_target = torch.cat(tensors,1).view(-1,2)
                 target, _ = self.get_attn_feat_relation(target, pred_fc_domain_relation_video_target, num_segments)
 
+        raise UserWarning(f'Source dim is {source.shape}')
         torch.sum(source, 1)
         if is_train:
             torch.sum(target, 1)
