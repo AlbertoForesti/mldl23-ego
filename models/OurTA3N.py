@@ -133,7 +133,7 @@ class BaselineTA3N(nn.Module):
         
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
-            predictions_grd_source = torch.empty((feats_trn_source.shape[0],0)+feats_trn_source[2:])
+            predictions_grd_source = torch.empty((feats_trn_source.shape[0],0)+feats_trn_source.shape[2:])
             for i in range(feats_trn_source.shape[1]):
                 predictions_grd_source = self._modules[f'Grd_{i}'](feats_trn_source[:,i,:])
             for i, feats_trn_source_single_scale in enumerate(feats_trn_source.values()):
