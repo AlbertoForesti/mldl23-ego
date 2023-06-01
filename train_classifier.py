@@ -206,6 +206,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
                 logger.info("New best accuracy {:.2f}%".format(val_metrics['top1']))
                 action_classifier.best_iter = real_iter
                 action_classifier.best_iter_score = val_metrics['top1']
+                wandb.run.summary["best_accuracy"] = val_metrics['top1']
             wandb.log(val_metrics)
 
             action_classifier.save_model(real_iter, val_metrics['top1'], prefix=None)
