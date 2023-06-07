@@ -266,7 +266,7 @@ class ActionRecognition(tasks.Task, ABC):
         """
 
         max_norm = 1.0
-        torch.nn.utils.clip_grad_norm_(self.task_models['RBG'].parameters(), max_norm)
+        torch.nn.utils.clip_grad_norm_(self.task_models['RGB'].parameters(), max_norm)
 
         super().step()
         self.reset_loss()
