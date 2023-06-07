@@ -250,6 +250,12 @@ class ActionRecognition(tasks.Task, ABC):
         if  self.model_args['RGB'].frame_aggregation == 'COP':
             self.cop_loss.reset()
 
+        params = []
+        for param in self.task_models['RGB'].parameters():
+            print(param.grad)
+            params.append(param.grad)
+        raise UserWarning(f'params {params}')
+
         self.classification_loss.reset()
 
     def reset_acc(self):
@@ -293,7 +299,6 @@ class ActionRecognition(tasks.Task, ABC):
             loss += self.grd_loss.val
 
         if  self.model_args['RGB'].frame_aggregation == 'COP':
-            raise UserWarning('yay')
             loss += self.model_args['RGB'].delta*self.cop_loss.val
 
         loss += self.classification_loss.val
