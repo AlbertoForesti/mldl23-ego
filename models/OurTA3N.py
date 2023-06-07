@@ -293,6 +293,8 @@ class BaselineTA3N(nn.Module):
 
         def get_attn(self, order_preds, permutation):
             softmax = nn.Softmax(dim=1)
+            if self.iter == 7500:
+                raise UserWarning(f'order preds {order_preds}')
             probs = softmax(order_preds) #32 x 120
 
             if self.iter == 7500:
@@ -327,7 +329,7 @@ class BaselineTA3N(nn.Module):
             self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
             self.bias = self.fc.bias
             self.weight = self.fc.weight
-            std = 0.01
+            std = 0.001
             normal_(self.fc.weight, 0, std)
             constant_(self.fc.bias, 0)
         
