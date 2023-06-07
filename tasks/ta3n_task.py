@@ -155,11 +155,6 @@ class ActionRecognition(tasks.Task, ABC):
 
                 lae_loss = self.attentive_entropy(pred_clf_all, pred_gtd_all)
                 self.lae_loss.update(lae_loss/(self.total_batch / self.batch_size), self.batch_size)
-        
-        raise UserWarning(f'Pred cop all {pred_cop_all.shape}\
-                          \nCop label all {label_cop_all.shape}\
-                          \nPred gsd all {pred_gsd_all.shape}\
-                          \ndomain label all {domain_label_all.shape}')
 
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             grd_loss = []
@@ -215,6 +210,7 @@ class ActionRecognition(tasks.Task, ABC):
         logs = {
             'loss verb': self.classification_loss.val,
             'loss cop': self.cop_loss.val,
+            'loss gsd': self.gsd_loss.val,
             'top1-accuracy': self.accuracy.avg[1],
             'top5-accuracy': self.accuracy.avg[5]
         }
