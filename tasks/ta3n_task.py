@@ -130,8 +130,7 @@ class ActionRecognition(tasks.Task, ABC):
                 for i in range(5):
                     self.attn_cop_weights[i].update(features['attn_weights_cop'][i])
 
-        raise UserWarning(f'Pred cop all {pred_cop_all}\
-                          \nCop label all {label_cop_all}')
+        
 
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
@@ -157,6 +156,11 @@ class ActionRecognition(tasks.Task, ABC):
                 lae_loss = self.attentive_entropy(pred_clf_all, pred_gtd_all)
                 self.lae_loss.update(lae_loss/(self.total_batch / self.batch_size), self.batch_size)
         
+        raise UserWarning(f'Pred cop all {pred_cop_all}\
+                          \nCop label all {label_cop_all}\
+                          \nPred gtf all {pred_gtd_all}\
+                          \ndomain label all {domain_label_all}')
+
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
             grd_loss = []
             for pred_grd_source_single_scale, pred_grd_target_single_scale in zip(features['pred_grd_source'].values(), features['pred_grd_target'].values()):
