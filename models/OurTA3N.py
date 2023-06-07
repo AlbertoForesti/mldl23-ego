@@ -281,7 +281,7 @@ class BaselineTA3N(nn.Module):
             softmax = nn.Softmax(dim=1)
             probs = softmax(order_preds) #32 x 120
 
-            if self.iter == 10000:
+            if self.iter == 5000:
                 raise UserWarning(f'Probs = {probs}')
             
             weights = torch.empty((0,probs.shape[0])).to(self.device) # 5 x 32
