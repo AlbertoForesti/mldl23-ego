@@ -259,6 +259,7 @@ class BaselineTA3N(nn.Module):
             combinations = list(itertools.combinations(row_indices, 2))
 
             x = x.view(-1, shape[-1])
+            raise UserWarning(f'new shape {x.shape}, shape orig {shape}')
             x = self.bn(x)
             x = x.view(shape)
 
