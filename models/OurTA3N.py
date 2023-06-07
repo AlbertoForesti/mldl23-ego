@@ -270,6 +270,7 @@ class BaselineTA3N(nn.Module):
                     tensors = tensors + (permuted_video[:, index, :],)
                 relation_feats_concatenated = torch.cat(tensors, 1)
                 relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
+                relation_feats_fc = self.bn(relation_feats_fc)
                 if first_iteration:
                     relation_feats_fc_concatenated = relation_feats_fc
                     first_iteration = False
