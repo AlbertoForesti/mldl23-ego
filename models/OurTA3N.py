@@ -231,7 +231,7 @@ class BaselineTA3N(nn.Module):
             self.num_classes = factorial(3, exact=True) # all possible permutations
             self.n_relations = comb(3, 2, exact=True)
             self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=3))
-            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
+            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=6)
             self.attention = attention
         
         def forward(self, x, num_segments):
