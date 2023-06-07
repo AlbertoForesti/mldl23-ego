@@ -242,6 +242,8 @@ class BaselineTA3N(nn.Module):
             permuted_video = x[:, permutation, :]
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
+
+            
             
             first_iteration = True
             for combination in combinations:
@@ -269,6 +271,11 @@ class BaselineTA3N(nn.Module):
                 attn_weights = self.get_attn(order_preds_all, permutation)
                 weighted_input = (attn_weights+1).t().unsqueeze(2).repeat(1,1,x.shape[-1]) * x
             
+            raise UserWarning(f'Combinations = {combinations}\
+                              \nPermutations = {self.permutations}\
+                              \nAttention weights = {attn_weights}\
+                              ')
+
             if self.attention:
                 return order_preds_all, labels, weighted_input, attn_weights.mean(dim=1)
             else:
