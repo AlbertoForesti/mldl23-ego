@@ -264,6 +264,10 @@ class ActionRecognition(tasks.Task, ABC):
         This method performs an optimization step and resets both the loss
         and the accuracy.
         """
+
+        max_norm = 1.0
+        torch.nn.utils.clip_grad_norm_(self.task_models['RBG'].parameters(), max_norm)
+
         super().step()
         self.reset_loss()
         self.reset_acc()
