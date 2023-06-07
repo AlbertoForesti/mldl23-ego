@@ -158,7 +158,7 @@ class ActionRecognition(tasks.Task, ABC):
         
         raise UserWarning(f'Pred cop all {pred_cop_all}\
                           \nCop label all {label_cop_all}\
-                          \nPred gtf all {pred_gtd_all}\
+                          \nPred gsd all {pred_gsd_all}\
                           \ndomain label all {domain_label_all}')
 
         if 'Grd' in self.model_args['RGB'].blocks and self.model_args['RGB'].frame_aggregation == 'TemRelation':
