@@ -281,6 +281,9 @@ class BaselineTA3N(nn.Module):
         def get_attn(self, order_preds, permutation):
             softmax = nn.Softmax(dim=1)
             probs = softmax(order_preds) #32 x 120
+
+            if self.iter == 10000
+                raise UserWarning(f'Probs = {probs}')
             
             weights = torch.empty((0,probs.shape[0])).to(self.device) # 5 x 32
             for new_order, original_order in enumerate(permutation): # iterates 5 times (number of clips in video)
