@@ -130,6 +130,10 @@ class ActionRecognition(tasks.Task, ABC):
                 for i in range(5):
                     self.attn_cop_weights[i].update(features['attn_weights_cop'][i])
 
+        raise UserWarning(f'Shape domain label all {domain_label_all.shape}\
+                          \nCop label all shape{label_cop_all.shape}\
+                          \nCop label all {label_cop_all}')
+
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
             domain_label_source=torch.zeros(pred_gtd_source.shape[0], dtype=torch.int64)
@@ -168,9 +172,7 @@ class ActionRecognition(tasks.Task, ABC):
             grd_loss = sum(grd_loss)/(len(grd_loss))
             self.grd_loss.update(torch.mean(grd_loss) / (self.total_batch / self.batch_size), self.batch_size)
 
-        raise UserWarning(f'Shape domain label all {domain_label_all.shape}\
-                          \nCop label all shape{label_cop_all.shape}\
-                          \nCop label all {label_cop_all}')
+        
         
         # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
         # we need different losses to backpropagate to different parts of the network
