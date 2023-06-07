@@ -283,6 +283,7 @@ class BaselineTA3N(nn.Module):
                     dist.append(1)
                 else:
                     dist.append(0)
+            raise UserWarning(f'{dist}')
             dist = torch.Tensor(dist).to(self.device)
             labels = dist.repeat(x.shape[0],1)
 
