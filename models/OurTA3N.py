@@ -242,6 +242,7 @@ class BaselineTA3N(nn.Module):
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             permutation = self.permutations[randint(0,len(self.permutations)-1)]
+            x_selected_clips = x[:,,:]
             permuted_video = x[:, permutation, :]
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))

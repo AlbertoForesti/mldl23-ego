@@ -207,6 +207,7 @@ class ActionRecognition(tasks.Task, ABC):
         """Log the current loss and top1/top5 accuracies to wandb."""
         logs = {
             'loss verb': self.classification_loss.val,
+            'loss cop': self.cop_loss.val,
             'top1-accuracy': self.accuracy.avg[1],
             'top5-accuracy': self.accuracy.avg[5]
         }
