@@ -223,6 +223,7 @@ class BaselineTA3N(nn.Module):
     class COPNet(nn.Module):
         def __init__(self, in_features_dim, n_clips, dropout=0.5, attention=False):
             super(BaselineTA3N.COPNet, self).__init__()
+            self.bn = nn.BatchNorm1d(in_features_dim)
             self.iter = 0
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
@@ -256,6 +257,10 @@ class BaselineTA3N(nn.Module):
             permuted_video = x[:, permutation, :]
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
+
+            x = x.view(-1, shape[-1])
+            x = self.bn(x)
+            x = x.view(shape)
 
             first_iteration = True
             for combination in combinations:
