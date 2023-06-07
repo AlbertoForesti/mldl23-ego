@@ -130,10 +130,6 @@ class ActionRecognition(tasks.Task, ABC):
                 for i in range(5):
                     self.attn_cop_weights[i].update(features['attn_weights_cop'][i])
 
-        raise UserWarning(f'Shape domain label all {domain_label_all.shape}\
-                          \nCop label all shape{label_cop_all.shape}\
-                          \nCop label all {label_cop_all}')
-
         if 'Gtd' in self.model_args['RGB'].blocks:
             pred_gtd_source = features['pred_gtd_source']
             domain_label_source=torch.zeros(pred_gtd_source.shape[0], dtype=torch.int64)
