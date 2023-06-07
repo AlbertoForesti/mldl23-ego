@@ -253,15 +253,15 @@ class BaselineTA3N(nn.Module):
                 raise UserWarning(f'params grad {params}')
 
             tmp = list(itertools.combinations(range(x.shape[1]), 3))
+            x = x.view(-1, shape[-1])
+            x = self.bn(x)
+            x = x.view(shape)
             x = x[:,tmp[randint(0, len(tmp)-1)],:]
             permuted_video = x[:, permutation, :]
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
 
-            x = x.view(-1, shape[-1])
-            raise UserWarning(f'new shape {x.shape}, shape orig {shape}')
-            x = self.bn(x)
-            x = x.view(shape)
+            
 
             first_iteration = True
             for combination in combinations:
