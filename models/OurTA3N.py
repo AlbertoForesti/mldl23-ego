@@ -242,7 +242,7 @@ class BaselineTA3N(nn.Module):
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             permutation = self.permutations[randint(0,len(self.permutations)-1)]
             
-            if self.iter == 100:
+            if self.iter == 7500:
                 params = []
                 for param in self.parameters():
                     print(param.grad)
