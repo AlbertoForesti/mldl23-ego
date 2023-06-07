@@ -287,8 +287,6 @@ class BaselineTA3N(nn.Module):
             dist = torch.Tensor(dist).to(self.device)
             labels = dist.repeat(x.shape[0],1)
 
-            raise UserWarning(f'{labels}')
-
             attn_weights = self.get_attn(order_preds_all, permutation)
 
             
