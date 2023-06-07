@@ -226,12 +226,11 @@ class BaselineTA3N(nn.Module):
             self.iter = 0
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
-            self.n_clips = 3
-            n_clips = 3
+            self.n_clips = n_clips
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
             self.num_classes = factorial(3, exact=True) # all possible permutations
             self.n_relations = comb(3, 2, exact=True)
-            self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=n_clips))
+            self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=3))
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
             self.attention = attention
         
@@ -242,12 +241,10 @@ class BaselineTA3N(nn.Module):
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             permutation = self.permutations[randint(0,len(self.permutations)-1)]
-            x_selected_clips = x[:,,:]
             permuted_video = x[:, permutation, :]
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
-
-            
+            permuted_video = x[:, permutation, :]
             
             first_iteration = True
             for combination in combinations:
