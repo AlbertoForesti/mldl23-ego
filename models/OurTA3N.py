@@ -230,7 +230,7 @@ class BaselineTA3N(nn.Module):
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
             self.num_classes = factorial(3, exact=True) # all possible permutations
             self.n_relations = comb(3, 2, exact=True)
-            self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=3))
+            self.permutations = list(itertools.permutations([i for i in range(3)], r=3))
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=6)
             self.attention = attention
         
@@ -241,9 +241,10 @@ class BaselineTA3N(nn.Module):
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             permutation = self.permutations[randint(0,len(self.permutations)-1)]
-            permuted_video = x[:, permutation, :]
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
+            tmp = list(itertools.combinations(row_indices, 3))
+            x = x[:,tmp[randint(0, len(tmp)-1)],:]
             permuted_video = x[:, permutation, :]
             
             first_iteration = True
