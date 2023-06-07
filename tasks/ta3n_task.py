@@ -265,9 +265,6 @@ class ActionRecognition(tasks.Task, ABC):
         and the accuracy.
         """
 
-        max_norm = 1.0
-        torch.nn.utils.clip_grad_norm_(self.task_models['RGB'].parameters(), max_norm)
-
         super().step()
         self.reset_loss()
         self.reset_acc()
