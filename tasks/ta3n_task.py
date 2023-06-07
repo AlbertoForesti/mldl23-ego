@@ -300,11 +300,3 @@ class ActionRecognition(tasks.Task, ABC):
         loss += self.classification_loss.val
 
         loss.backward(retain_graph=retain_graph)
-
-        params = []
-        for param in self.task_models['RGB'].parameters():
-            print(param.grad)
-            if param.grad is None:
-                raise UserWarning(f'None params')
-            params.append(param.grad)
-        raise UserWarning(f'params {params}')
