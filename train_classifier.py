@@ -3,6 +3,7 @@ from statistics import mean
 from utils.logger import logger
 import torch.nn.parallel
 import torch.optim
+from torch.utils.data import Subset
 
 import torch
 from utils.loaders import EpicKitchensDataset
@@ -111,7 +112,30 @@ def main():
                                                                      None, load_feat=True),
                                                  batch_size=args.batch_size, shuffle=False,
                                                  num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
-        train(action_classifier, train_loader_source,train_loader_target, val_loader, device, num_classes)
+        if args.debug:
+            subset_size = 100  # Specify the desired size of the subset
+
+            # Get the original dataset from the dataloader
+            original_dataset_train_source = train_loader_source.dataset
+            original_dataset_train_target = train_loader_target.dataset
+
+            original_dataset_val_target = val_loader.dataset
+
+            # Create a Subset object with the desired subset indices
+            subset_indices = range(subset_size)  # Adjust the indices as per your requirements
+            
+            subset_train_source = Subset(original_dataset_train_source, subset_indices)
+            subset_train_target = Subset(original_dataset_train_target, subset_indices)
+            subset_val_target = Subset(original_dataset_val_target, subset_indices)
+
+            train_loader_source = torch.utils.data.DataLoader(subset_train_source,batch_size=args.batch_size, shuffle=True,
+                                                   num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
+            train_loader_target = torch.utils.data.DataLoader(subset_train_target,batch_size=args.batch_size, shuffle=True,
+                                                   num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
+            val_loader = torch.utils.data.DataLoader(subset_val_target, batch_size=args.batch_size, shuffle=False,
+                                                 num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
+
+        train(action_classifier, train_loader_source, train_loader_target, val_loader, device, num_classes)
 
     elif args.action == "validate":
         if args.resume_from is not None:

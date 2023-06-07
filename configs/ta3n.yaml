@@ -11,6 +11,7 @@ resume_from: null # checkpoint directory
 logname: null # name of the logs
 models_dir: null # directory containing all the models
 in_feat_dim: 1024
+debug: False
 
 train:
   num_iter: 5000 # number of training iterations with total_batch size
