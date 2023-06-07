@@ -248,8 +248,8 @@ class BaselineTA3N(nn.Module):
                     print(param.grad)
                     if param.grad is None:
                         raise UserWarning(f'None params')
-                    params.append(param.grad)
-                raise UserWarning(f'params {params}')
+                    params.append(param.grad.abs().mean().item())
+                raise UserWarning(f'params grad {params}')
 
             tmp = list(itertools.combinations(range(x.shape[1]), 3))
             x = x[:,tmp[randint(0, len(tmp)-1)],:]
