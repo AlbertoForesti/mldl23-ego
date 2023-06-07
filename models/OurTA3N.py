@@ -223,6 +223,7 @@ class BaselineTA3N(nn.Module):
     class COPNet(nn.Module):
         def __init__(self, in_features_dim, n_clips, dropout=0.5, attention=False):
             super(BaselineTA3N.COPNet, self).__init__()
+            self.iter = 0
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
             self.n_clips = n_clips
@@ -234,6 +235,7 @@ class BaselineTA3N(nn.Module):
             self.attention = attention
         
         def forward(self, x, num_segments):
+            self.iter += 1
             shape = x.shape
             weighted_input = torch.empty((0,)+ shape[1:]).to(self.device)
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
@@ -279,6 +281,10 @@ class BaselineTA3N(nn.Module):
         def get_attn(self, order_preds, permutation):
             softmax = nn.Softmax(dim=1)
             probs = softmax(order_preds) #32 x 120
+
+            if self.iter == 2000:
+                raise UserWarning(f'Probs = {probs}')
+            
             weights = torch.empty((0,probs.shape[0])).to(self.device) # 5 x 32
             for new_order, original_order in enumerate(permutation): # iterates 5 times (number of clips in video)
                 correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
