@@ -277,10 +277,10 @@ class BaselineTA3N(nn.Module):
                 else:
                     relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)
             order_preds_all = self.fc_video(relation_feats_fc_concatenated)
-            dist = []
+            dist = None
             for label, p in enumerate(self.permutations):
                 if p == permutation:
-                    dist.append(label)
+                    dist = label
             
             dist = torch.Tensor(dist).to(self.device)
             labels = dist.repeat(x.shape[0],1)
