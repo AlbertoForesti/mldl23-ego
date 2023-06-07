@@ -282,7 +282,7 @@ class BaselineTA3N(nn.Module):
                 if p == permutation:
                     dist = label
             
-            dist = torch.Tensor([dist]).to(self.device)
+            dist = torch.Tensor([dist], dtype=torch.int64).to(self.device)
             labels = dist.repeat(x.shape[0])
 
             attn_weights = self.get_attn(order_preds_all, permutation)
