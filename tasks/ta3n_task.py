@@ -293,6 +293,7 @@ class ActionRecognition(tasks.Task, ABC):
             loss += self.grd_loss.val
 
         if  self.model_args['RGB'].frame_aggregation == 'COP':
+            raise UserWarning('yay')
             loss += self.model_args['RGB'].delta*self.cop_loss.val
 
         loss += self.classification_loss.val
