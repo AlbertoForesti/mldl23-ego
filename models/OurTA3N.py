@@ -226,10 +226,11 @@ class BaselineTA3N(nn.Module):
             self.iter = 0
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
-            self.n_clips = n_clips
+            self.n_clips = 3
+            n_clips = 3
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
-            self.num_classes = factorial(n_clips, exact=True) # all possible permutations
-            self.n_relations = comb(n_clips, 2, exact=True)
+            self.num_classes = factorial(3, exact=True) # all possible permutations
+            self.n_relations = comb(3, 2, exact=True)
             self.permutations = list(itertools.permutations([i for i in range(n_clips)], r=n_clips))
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=len(self.permutations))
             self.attention = attention
@@ -282,7 +283,7 @@ class BaselineTA3N(nn.Module):
             softmax = nn.Softmax(dim=1)
             probs = softmax(order_preds) #32 x 120
 
-            if self.iter == 20000:
+            if self.iter == 10000:
                 raise UserWarning(f'Probs = {probs}')
             
             weights = torch.empty((0,probs.shape[0])).to(self.device) # 5 x 32
