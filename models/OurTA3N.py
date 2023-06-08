@@ -248,8 +248,6 @@ class BaselineTA3N(nn.Module):
                 params = []
                 for param in self.parameters():
                     print(param.grad)
-                    if param.grad is None:
-                        raise UserWarning(f'None params')
                     params_grad.append(param.grad.abs().mean().item())
                     params.append(param)
                 raise UserWarning(f'params grad {params_grad}\
