@@ -221,7 +221,7 @@ class BaselineTA3N(nn.Module):
             
     
     class COPNet(nn.Module):
-        def __init__(self, in_features_dim, n_clips, dropout=0.5, attention=False):
+        def __init__(self, in_features_dim, n_clips, dropout=0.2, attention=False):
             super(BaselineTA3N.COPNet, self).__init__()
             self.bn = nn.BatchNorm1d(in_features_dim)
             self.iter = 0
@@ -243,7 +243,7 @@ class BaselineTA3N(nn.Module):
             labels = torch.empty((0,len(self.permutations))).to(self.device)
             permutation = self.permutations[randint(0,len(self.permutations)-1)]
             
-            if self.iter == 2500:
+            """if self.iter == 2500:
                 params_grad = []
                 params = []
                 for param in self.parameters():
@@ -252,7 +252,7 @@ class BaselineTA3N(nn.Module):
                         params_grad.append(param.grad.abs().mean().item())
                         params.append(param)
                 raise UserWarning(f'params grad {params_grad}\
-                                  \nparams {params}')
+                                  \nparams {params}')"""
 
             tmp = list(itertools.combinations(range(x.shape[1]), 3))
             x = x.view(-1, shape[-1])
