@@ -356,7 +356,7 @@ class BaselineTA3N(nn.Module):
             if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
                 self.out_features_dim = self.in_features_dim
                 if temporal_pooling == 'COP':
-                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, dropout=model_config.dropout, attention=model_config.attention_cop)
+                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments, attention=model_config.attention_cop)
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
