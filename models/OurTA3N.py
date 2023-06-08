@@ -262,7 +262,7 @@ class BaselineTA3N(nn.Module):
             combinations = list(itertools.combinations(row_indices, 2))
 
             first_iteration = True
-            """for combination in combinations:
+            for combination in combinations:
                 tensors = ()
                 for index in combination:
                     tensors = tensors + (permuted_video[:, index, :],)
@@ -273,8 +273,8 @@ class BaselineTA3N(nn.Module):
                     relation_feats_fc_concatenated = relation_feats_fc
                     first_iteration = False
                 else:
-                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)"""
-            relation_feats_fc_concatenated = permuted_video.view(-1, self.n_relations*shape[-1])
+                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)
+            # relation_feats_fc_concatenated = permuted_video.view(-1, self.n_relations*shape[-1])
             order_preds_all = self.fc_video(relation_feats_fc_concatenated)
             dist = None
             for label, p in enumerate(self.permutations):
