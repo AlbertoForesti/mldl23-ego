@@ -261,10 +261,8 @@ class BaselineTA3N(nn.Module):
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
 
-            
-
             first_iteration = True
-            for combination in combinations:
+            """for combination in combinations:
                 tensors = ()
                 for index in combination:
                     tensors = tensors + (permuted_video[:, index, :],)
@@ -275,7 +273,8 @@ class BaselineTA3N(nn.Module):
                     relation_feats_fc_concatenated = relation_feats_fc
                     first_iteration = False
                 else:
-                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)
+                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)"""
+            relation_feats_fc_concatenated = permuted_video.view(-1, shape[-1])
             order_preds_all = self.fc_video(relation_feats_fc_concatenated)
             dist = None
             for label, p in enumerate(self.permutations):
@@ -287,9 +286,7 @@ class BaselineTA3N(nn.Module):
 
             attn_weights = self.get_attn(order_preds_all, permutation)
 
-            
             if self.attention:
-                
                 weighted_input = (attn_weights+1).t().unsqueeze(2).repeat(1,1,x.shape[-1]) * x
             
             if self.attention:
