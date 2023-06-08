@@ -274,7 +274,7 @@ class BaselineTA3N(nn.Module):
                     first_iteration = False
                 else:
                     relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)"""
-            relation_feats_fc_concatenated = permuted_video.view(-1, shape[-1])
+            relation_feats_fc_concatenated = permuted_video.view(-1, self.n_relations*shape[-1])
             order_preds_all = self.fc_video(relation_feats_fc_concatenated)
             dist = None
             for label, p in enumerate(self.permutations):
