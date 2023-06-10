@@ -136,14 +136,19 @@ class BaselineTA3N(nn.Module):
         if 'copnet' in self.end_points and is_train:
             permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
             permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
+            raise UserWarning(f'Predictions {labels_predictions_cop_source}\
+                              \nPermuted {source}\
+                              \nOriginal {permuted_source}')
             predictions_cop_source = self._modules['copnet'](permuted_source)
             predictions_cop_target = self._modules['copnet'](permuted_target)
         
         if 'copnet_trn_unified' in self.end_points:
+            raise UserWarning(f'Should not be here')
             source, labels_predictions_cop_source = self._permute(source, self.permute_type)
             target, labels_predictions_cop_target = self._permute(target, self.permute_type)
         
         if 'copnet_trn_sepate' in self.end_points and is_train:
+            raise UserWarning(f'Should not be here')
             permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
             permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
             permuted_source, _ = self._modules['Temporal module'](source, num_segments)
@@ -336,10 +341,8 @@ class BaselineTA3N(nn.Module):
             self.model_config = model_config
             self.cop_trn = cop_trn
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
+            if temporal_pooling == 'TemPooling':
                 self.out_features_dim = self.in_features_dim
-                if temporal_pooling == 'COP':
-                    self.cop = BaselineTA3N.COPNet(in_features_dim, model_config.train_segments)
             elif temporal_pooling == 'TemRelation':
                 self.num_bottleneck = 512
                 self.trn = TRNmodule.RelationModuleMultiScale(in_features_dim, self.num_bottleneck, self.train_segments)
