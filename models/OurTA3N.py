@@ -144,12 +144,12 @@ class BaselineTA3N(nn.Module):
                               \nPredictions {predictions_cop_source}')"""
         
         if 'copnet_trn_unified' in self.end_points:
-            source, labels_predictions_cop_source = self._permute(source, self.permute_type)
-            target, labels_predictions_cop_target = self._permute(target, self.permute_type)
+            source, labels_predictions_cop_source = self._permute(source, self.permute_type, sample_clips=self.model_config.cop_samples)
+            target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
         
         if 'copnet_trn_sepate' in self.end_points and is_train:
-            permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
-            permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
+            permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type, sample_clips=self.model_config.cop_samples)
+            permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
             permuted_source, _ = self._modules['Temporal module'](source, num_segments)
             permuted_target, _ = self._modules['Temporal module'](target, num_segments)
             predictions_cop_source = self._modules['copnet_trn_sepate'](permuted_source)
