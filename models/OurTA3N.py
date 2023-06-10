@@ -47,6 +47,18 @@ class BaselineTA3N(nn.Module):
             self.end_points[end_point] = self.DomainClassifier(in_features_dim, model_config.beta0)
             if self._final_endpoint == end_point:
                 return
+
+        if 'copnet' in self.model_config.cop_type:
+            out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
+            self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
+        
+        if 'trn' in self.model_config.cop_type:
+            out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
+            if 'unified' in self.model_config.cop_type:
+                end_point_name = 'copnet_trn_unified'
+            else:
+                end_point_name = 'copnet_trn_separate'
+            self.end_points[end_point_name] = self.FullyConnectedLayer(in_features_dim, out_features_dim_copnet)
         
         end_point = 'Temporal module'
         self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation, model_config=self.model_config)
@@ -113,24 +125,38 @@ class BaselineTA3N(nn.Module):
             predictions_gsd_source = None
             predictions_gsd_target = None
         
-
         predictions_grd_target = None
         feats_trn_target = feats_trn_source = None
         predictions_cop_source = predictions_cop_target = None
         labels_predictions_cop_source = labels_predictions_cop_target = None
-        attn_weights_cop = None
 
-        if self.model_config.frame_aggregation != 'COP':
-            source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
-            if is_train:
-                target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
+        if 'copnet' in self.end_points and is_train:
+            permuted_source, labels_predictions_cop_source = self._permute(source)
+            permuted_target, labels_predictions_cop_target = self._permute(target)
+            predictions_cop_source = self._modules['copnet'](permuted_source)
+            predictions_cop_target = self._modules['copnet'](permuted_target)
+        
+        if 'copnet_trn_unified' in self.end_points:
+            source, labels_predictions_cop_source = self._permute(source)
+            target, labels_predictions_cop_target = self._permute(target)
+        
+        if 'copnet_trn_sepate' in self.end_points and is_train:
+            permuted_source, labels_predictions_cop_source = self._permute(source)
+            permuted_target, labels_predictions_cop_target = self._permute(target)
+            permuted_source, _ = self._modules['Temporal module'](source, num_segments)
+            permuted_target, _ = self._modules['Temporal module'](target, num_segments)
+            predictions_cop_source = self._modules['copnet_trn_sepate'](permuted_source)
+            predictions_cop_target = self._modules['copnet_trn_sepate'](permuted_target)
+
+        source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
+        if is_train:
+            target, feats_trn_target = self._modules['Temporal module'](target, num_segments)
         else:
-            source, predictions_cop_source, labels_predictions_cop_source, attn_weights_cop = self._modules['Temporal module'](source, num_segments, is_train=is_train)
-            if is_train:
-                target, predictions_cop_target, labels_predictions_cop_target, _ = self._modules['Temporal module'](target, num_segments, is_train=is_train)
-        if not is_train:
             target=None
         
+        if 'copnet_trn_unified' in self.end_points:
+            source = self._modules['copnet_trn_unified'](permuted_source)
+            target = self._modules['copnet_trn_unified'](permuted_target)
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
             predictions_grd_source = {}
@@ -193,8 +219,29 @@ class BaselineTA3N(nn.Module):
                         "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target, \
                         "pred_cop_source": predictions_cop_source,"pred_cop_target": predictions_cop_target, \
                         "pred_clf_source": predictions_clf_source,"pred_clf_target": predictions_clf_target, \
-                        "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target, \
-                        "attn_weights_cop": attn_weights_cop}
+                        "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target}
+
+    def _permute(self, x, permute_type, sample_clips=3):
+        shape = x.shape
+        batch_size = x.shape[0]
+        permutations = list(itertools.permutations([i for i in range(3)], r=sample_clips))
+
+        tmp = list(itertools.combinations(range(x.shape[1]), sample_clips))
+        x_permuted = x[:,tmp[randint(0, len(tmp)-1)],:] # sample three clips out of five
+
+        if permute_type == 'simple':
+            shift_mask = randint(0,2,batch_size)
+            permutation_vector = torch.Tensor([permutations[randint(0,len(permutations))] if i == 0 else [0, 1, 2] for i in shift_mask]).long().to(self.device)
+        else:
+            shift_mask = randint(0,len(permutations),batch_size)
+            permutation_vector = torch.Tensor([permutations[i] for i in shift_mask]).long().to(self.device)
+        
+        permutation_vector = permutation_vector.unsqueeze(2)
+        repeat_shape = torch.Size([1,1,shape[2]])
+        permutation_vector = permutation_vector.repeat(repeat_shape)
+        x_permuted = torch.gather(x_permuted,1,permutation_vector)
+        labels = torch.Tensor(shift_mask).long().to(self.device)
+        return x_permuted, labels
 
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
@@ -218,71 +265,27 @@ class BaselineTA3N(nn.Module):
         
         def forward(self, x):
             return self.fc_layers(x)
-            
     
     class COPNet(nn.Module):
-        def __init__(self, in_features_dim, n_clips, dropout=0.2, attention=False, simple_cop=True):
+        def __init__(self, in_features_dim, out_features_dim, must_aggregate_clips=False, dropout=0.2):
             super(BaselineTA3N.COPNet, self).__init__()
             self.bn = nn.BatchNorm1d(in_features_dim)
-            self.iter = 0
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
-            self.n_clips = n_clips
-            self.simple_cop = simple_cop
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
             self.num_classes = factorial(3, exact=True) # all possible permutations
             self.n_relations = comb(3, 2, exact=True)
             self.permutations = list(itertools.permutations([i for i in range(3)], r=3))
-            if self.simple_cop:
-                self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=2)
-            self.attention = attention
+            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=out_features_dim)
+            
         
-        def forward(self, x, num_segments):
-            self.iter += 1
-            shape = x.shape
-            batch_size = x.shape[0]
-            weighted_input = torch.empty((0,)+ shape[1:]).to(self.device)
-            order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
-            labels = torch.empty((0,len(self.permutations))).to(self.device)
-
-            tmp = list(itertools.combinations(range(x.shape[1]), 3))
-            x = x.view(-1, shape[-1])
-            x = self.bn(x)
-            x = x.view(shape)
-            x = x[:,tmp[randint(0, len(tmp)-1)],:] # sample three clips out of five
-
-            if self.simple_cop:
-                shift_mask = randint(0,2,batch_size)
-                permutation_vector = torch.Tensor([self.permutations[randint(0,len(self.permutations))] if i == 0 else [0, 1, 2] for i in shift_mask]).long().to(self.device)
-                permutation_vector = permutation_vector.unsqueeze(2)
-                repeat_shape = torch.Size([1,1,shape[2]])
-                permutation_vector = permutation_vector.repeat(repeat_shape)
-                permuted_video = torch.gather(x,1,permutation_vector)
-            else:
-                shift_mask = randint(0,len(self.permutations),batch_size)
-                permutation_vector = torch.Tensor([self.permutations[randint(0,len(self.permutations))] if i == 0 else [0, 1, 2] for i in shift_mask]).long().to(self.device)
-            
-            row_indices = list(range(permuted_video.shape[1]))
+        def forward(self, x):
+            row_indices = list(range(x.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
-
-            """if self.iter == 2500:
-                params_grad = []
-                params = []
-                for param in self.parameters():
-                    if param.grad is not None:
-                        print(param.grad)
-                        params_grad.append(param.grad.abs().mean().item())
-                        params.append(param)
-                raise UserWarning(f'params grad {params_grad}\
-                                  \nparams {params}')"""
-
-            
-
             first_iteration = True
             for combination in combinations:
                 tensors = ()
                 for index in combination:
-                    tensors = tensors + (permuted_video[:, index, :],)
+                    tensors = tensors + (x[:, index, :],)
                 relation_feats_concatenated = torch.cat(tensors, 1)
                 relation_feats_fc = self.fc_pairwise_relations(relation_feats_concatenated)
                 relation_feats_fc = self.bn(relation_feats_fc)
@@ -291,43 +294,8 @@ class BaselineTA3N(nn.Module):
                     first_iteration = False
                 else:
                     relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)
-            # relation_feats_fc_concatenated = permuted_video.view(-1, self.n_relations*shape[-1])
             order_preds_all = self.fc_video(relation_feats_fc_concatenated)
-            labels = torch.Tensor(shift_mask).long().to(self.device)
-            attn_weights = None
-
-            if self.attention:
-                weighted_input = (attn_weights+1).t().unsqueeze(2).repeat(1,1,x.shape[-1]) * x
-            
-            if self.attention:
-                return order_preds_all, labels, weighted_input, attn_weights.var(dim=1)
-            else:
-                return order_preds_all, labels, x, None
-
-        def get_attn(self, order_preds, permutation):
-            softmax = nn.Softmax(dim=1)
-            if self.iter == 7500:
-                raise UserWarning(f'order preds {order_preds}')
-            probs = softmax(order_preds) #32 x 120
-
-            if self.iter == 7500:
-                raise UserWarning(f'probs {probs}')
-            
-            weights = torch.empty((0,probs.shape[0])).to(self.device) # 5 x 32
-            for new_order, original_order in enumerate(permutation): # iterates 5 times (number of clips in video)
-                correct_pred_indices = self.get_correct_pred_indices(original_order, new_order)
-                # raise UserWarning(f'permutation: {permutation}, probs shape: {probs.shape}\n correct pred indeces: {correct_pred_indices}')
-                probs_weird = torch.sum(probs[:,correct_pred_indices], dim=1).unsqueeze(0)
-                # raise UserWarning(f'weights={weights.shape}, probs={probs.shape}, probs_weird = {probs_weird.shape}')
-                weights = torch.cat((weights, probs_weird))
-            return weights
-        
-        def get_correct_pred_indices(self, original_order, new_order):
-            indices = []
-            for i, permutation in enumerate(self.permutations):
-                if permutation[new_order] == original_order:
-                    indices.append(i)
-            return indices
+            return order_preds_all
 
     class FullyConnectedLayer(nn.Module):
         def __init__(self, in_features_dim, out_features_dim, dropout=0.5):
@@ -354,12 +322,13 @@ class BaselineTA3N(nn.Module):
 
 
     class TemporalModule(nn.Module):
-        def __init__(self, in_features_dim, train_segments, temporal_pooling = 'TemPooling', model_config=None) -> None:
+        def __init__(self, in_features_dim, train_segments, temporal_pooling = 'TemPooling', model_config=None, cop_trn=False) -> None:
             super(BaselineTA3N.TemporalModule, self).__init__()
             self.pooling_type = temporal_pooling
             self.in_features_dim = in_features_dim
             self.train_segments = train_segments
             self.model_config = model_config
+            self.cop_trn = cop_trn
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             if temporal_pooling == 'TemPooling' or temporal_pooling == 'COP':
                 self.out_features_dim = self.in_features_dim

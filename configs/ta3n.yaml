@@ -66,6 +66,7 @@ models:
     gamma: 0.3
     delta: 0.75
     attention: False
-    attention_cop: False
     batch_normalization: True
+    cop_type: 'copnet_simple'
+    cop_samples: 3
 
