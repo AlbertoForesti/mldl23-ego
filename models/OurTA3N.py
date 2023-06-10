@@ -23,6 +23,7 @@ class BaselineTA3N(nn.Module):
     def __init__(self, in_features_dim, num_classes, model_config):
         
         self.end_points = {}
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.train_segments = model_config.train_segments
         self.val_segments = model_config.val_segments
         self.frame_aggregation=model_config.frame_aggregation
