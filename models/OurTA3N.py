@@ -228,6 +228,7 @@ class BaselineTA3N(nn.Module):
                         "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target}
 
     def _permute(self, x, permute_type, sample_clips=3):
+        shape = x.shape
         batch_size = x.shape[0]
         permutations = list(itertools.permutations([i for i in range(3)], r=sample_clips))
 
