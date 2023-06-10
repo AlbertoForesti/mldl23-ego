@@ -145,17 +145,20 @@ class BaselineTA3N(nn.Module):
         
         if 'copnet_trn_unified' in self.end_points:
             source, labels_predictions_cop_source = self._permute(source, self.permute_type, sample_clips=self.model_config.cop_samples)
-            target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
+            if is_train:
+                target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
         
         if 'copnet_trn_separate' in self.end_points and is_train:
             permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type, sample_clips=self.model_config.cop_samples)
-            permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
             permuted_source, _ = self._modules['Temporal module'](source, num_segments)
-            permuted_target, _ = self._modules['Temporal module'](target, num_segments)
             permuted_source = torch.sum(permuted_source, 1)
-            permuted_target = torch.sum(permuted_target, 1)
             predictions_cop_source = self._modules['copnet_trn_separate'](permuted_source)
-            predictions_cop_target = self._modules['copnet_trn_separate'](permuted_target)
+
+            if is_train:
+                permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
+                permuted_target, _ = self._modules['Temporal module'](target, num_segments)
+                permuted_target = torch.sum(permuted_target, 1)
+                predictions_cop_target = self._modules['copnet_trn_separate'](permuted_target)
 
         source, feats_trn_source = self._modules['Temporal module'](source, num_segments, is_train=is_train)
         if is_train:
