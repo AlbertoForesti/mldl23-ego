@@ -162,8 +162,8 @@ class BaselineTA3N(nn.Module):
             target=None
         
         if 'copnet_trn_unified' in self.end_points:
-            source = self._modules['copnet_trn_unified'](source)
-            target = self._modules['copnet_trn_unified'](target)
+            predictions_cop_source = self._modules['copnet_trn_unified'](source)
+            predictions_cop_target = self._modules['copnet_trn_unified'](target)
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
             predictions_grd_source = {}
