@@ -234,7 +234,8 @@ class BaselineTA3N(nn.Module):
         permutations = list(itertools.permutations([i for i in range(3)], r=sample_clips))
 
         tmp = list(itertools.combinations(range(x.shape[1]), sample_clips))
-        x_permuted = x[:,tmp[randint(0, len(tmp)-1)],:] # sample three clips out of five
+        x_permuted = x[:,tmp[randint(0, len(tmp))],:] # sample x clips out of five
+            
 
         if permute_type == 'simple':
             shift_mask = randint(0,2,batch_size)
