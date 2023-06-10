@@ -257,7 +257,10 @@ class BaselineTA3N(nn.Module):
                 permutation_vector = permutation_vector.unsqueeze(2)
                 repeat_shape = torch.Size([1,1,shape[2]])
                 permutation_vector = permutation_vector.repeat(repeat_shape)
-                permuted_video = torch.gather(permuted_video,1,permutation_vector)
+                permuted_video = torch.gather(x,1,permutation_vector)
+            else:
+                shift_mask = randint(0,len(self.permutations),batch_size)
+                permutation_vector = torch.Tensor([self.permutations[randint(0,len(self.permutations))] if i == 0 else [0, 1, 2] for i in shift_mask]).long().to(self.device)
             
             row_indices = list(range(permuted_video.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
