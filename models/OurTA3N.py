@@ -50,7 +50,6 @@ class BaselineTA3N(nn.Module):
                 return
 
         if 'copnet' in self.model_config.cop_type:
-            self.bn = nn.BatchNorm1d(in_features_dim)
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
@@ -135,8 +134,6 @@ class BaselineTA3N(nn.Module):
         labels_predictions_cop_source = labels_predictions_cop_target = None
 
         if 'copnet' in self.end_points and is_train:
-            source = self._bn(source)
-            target = self._bn(target)
             permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
             permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
             predictions_cop_source = self._modules['copnet'](permuted_source)
@@ -249,13 +246,6 @@ class BaselineTA3N(nn.Module):
         labels = torch.Tensor(shift_mask).long().to(self.device)
         return x_permuted, labels
 
-    def _bn(self, x):
-        shape = x.shape
-        x = x.view(-1, shape[-1])
-        x = self.bn(x)
-        x = x.view(shape)
-        return x
-
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
             
@@ -282,6 +272,7 @@ class BaselineTA3N(nn.Module):
     class COPNet(nn.Module):
         def __init__(self, in_features_dim, out_features_dim, must_aggregate_clips=False, dropout=0.2):
             super(BaselineTA3N.COPNet, self).__init__()
+            self.bn = nn.BatchNorm1d(in_features_dim)
             self.in_features_dim = in_features_dim
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
             self.num_classes = factorial(3, exact=True) # all possible permutations
@@ -290,6 +281,10 @@ class BaselineTA3N(nn.Module):
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=out_features_dim)
             
         def forward(self, x):
+            shape = x.shape
+            x = x.view(-1, shape[-1])
+            x = self.bn(x)
+            x = x.view(shape)
             row_indices = list(range(x.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
             first_iteration = True
