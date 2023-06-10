@@ -62,6 +62,7 @@ class BaselineTA3N(nn.Module):
 
         if 'trn' in self.model_config.cop_type:
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
+            raise UserWarning(f'out features dim {out_features_dim_copnet}')
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             if 'unified' in self.model_config.cop_type:
                 end_point_name = 'copnet_trn_unified'
