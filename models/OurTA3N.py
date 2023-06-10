@@ -4,7 +4,7 @@ import torch.nn as nn
 import itertools
 from torch.autograd import Function
 from scipy.special import factorial, comb
-from random import randint
+from numpy.random import randint
 from torch.nn.init import normal_, constant_
 from models import TRNmodule
 from collections import OrderedDict
@@ -221,28 +221,47 @@ class BaselineTA3N(nn.Module):
             
     
     class COPNet(nn.Module):
-        def __init__(self, in_features_dim, n_clips, dropout=0.2, attention=False):
+        def __init__(self, in_features_dim, n_clips, dropout=0.2, attention=False, simple_cop=True):
             super(BaselineTA3N.COPNet, self).__init__()
             self.bn = nn.BatchNorm1d(in_features_dim)
             self.iter = 0
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.in_features_dim = in_features_dim
             self.n_clips = n_clips
+            self.simple_cop = simple_cop
             self.fc_pairwise_relations = BaselineTA3N.FullyConnectedLayer(in_features_dim=2*in_features_dim, out_features_dim=in_features_dim, dropout=dropout)
             self.num_classes = factorial(3, exact=True) # all possible permutations
             self.n_relations = comb(3, 2, exact=True)
             self.permutations = list(itertools.permutations([i for i in range(3)], r=3))
-            self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=6)
+            if self.simple_cop:
+                self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=2)
             self.attention = attention
         
         def forward(self, x, num_segments):
             self.iter += 1
             shape = x.shape
+            batch_size = x.shape[0]
             weighted_input = torch.empty((0,)+ shape[1:]).to(self.device)
             order_preds_all = torch.empty((0,len(self.permutations))).to(self.device)
             labels = torch.empty((0,len(self.permutations))).to(self.device)
-            permutation = self.permutations[randint(0,len(self.permutations)-1)]
+
+            tmp = list(itertools.combinations(range(x.shape[1]), 3))
+            x = x.view(-1, shape[-1])
+            x = self.bn(x)
+            x = x.view(shape)
+            x = x[:,tmp[randint(0, len(tmp)-1)],:] # sample three clips out of five
+
+            if self.simple_cop:
+                shift_mask = randint(0,2,batch_size)
+                permutation_vector = torch.Tensor([self.permutations[randint(0,len(self.permutations))] if i == 0 else [0, 1, 2] for i in shift_mask]).long().to(self.device)
+                permutation_vector = permutation_vector.unsqueeze(2)
+                repeat_shape = torch.Size([1,1,shape[2]])
+                permutation_vector = permutation_vector.repeat(repeat_shape)
+                permuted_video = torch.gather(permuted_video,1,permutation_vector)
             
+            row_indices = list(range(permuted_video.shape[1]))
+            combinations = list(itertools.combinations(row_indices, 2))
+
             """if self.iter == 2500:
                 params_grad = []
                 params = []
@@ -254,16 +273,9 @@ class BaselineTA3N(nn.Module):
                 raise UserWarning(f'params grad {params_grad}\
                                   \nparams {params}')"""
 
-            tmp = list(itertools.combinations(range(x.shape[1]), 3))
-            x = x.view(-1, shape[-1])
-            x = self.bn(x)
-            x = x.view(shape)
-            x = x[:,tmp[randint(0, len(tmp)-1)],:]
-            permuted_video = x[:, permutation, :]
-            row_indices = list(range(permuted_video.shape[1]))
-            combinations = list(itertools.combinations(row_indices, 2))
+            
 
-            """first_iteration = True
+            first_iteration = True
             for combination in combinations:
                 tensors = ()
                 for index in combination:
@@ -275,18 +287,11 @@ class BaselineTA3N(nn.Module):
                     relation_feats_fc_concatenated = relation_feats_fc
                     first_iteration = False
                 else:
-                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)"""
-            relation_feats_fc_concatenated = permuted_video.view(-1, self.n_relations*shape[-1])
+                    relation_feats_fc_concatenated = torch.cat((relation_feats_fc_concatenated, relation_feats_fc), 1)
+            # relation_feats_fc_concatenated = permuted_video.view(-1, self.n_relations*shape[-1])
             order_preds_all = self.fc_video(relation_feats_fc_concatenated)
-            dist = None
-            for label, p in enumerate(self.permutations):
-                if p == permutation:
-                    dist = label
-            
-            dist = torch.Tensor([dist]).long().to(self.device)
-            labels = dist.repeat(x.shape[0])
-
-            attn_weights = self.get_attn(order_preds_all, permutation)
+            labels = torch.Tensor(shift_mask).long().to(self.device)
+            attn_weights = None
 
             if self.attention:
                 weighted_input = (attn_weights+1).t().unsqueeze(2).repeat(1,1,x.shape[-1]) * x
