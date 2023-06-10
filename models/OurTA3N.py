@@ -228,7 +228,6 @@ class BaselineTA3N(nn.Module):
                         "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target}
 
     def _permute(self, x, permute_type, sample_clips=3):
-        shape = x.shape
         batch_size = x.shape[0]
         permutations = list(itertools.permutations([i for i in range(3)], r=sample_clips))
 
@@ -254,6 +253,7 @@ class BaselineTA3N(nn.Module):
         x = x.view(-1, shape[-1])
         x = self.bn(x)
         x = x.view(shape)
+        return x
 
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
