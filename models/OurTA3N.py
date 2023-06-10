@@ -283,6 +283,10 @@ class BaselineTA3N(nn.Module):
             
         
         def forward(self, x):
+            shape = x.shape
+            x = x.view((-1,) + (shape[-1],))
+            x = self.bn(x)
+            x = x.view(shape)
             row_indices = list(range(x.shape[1]))
             combinations = list(itertools.combinations(row_indices, 2))
             first_iteration = True
