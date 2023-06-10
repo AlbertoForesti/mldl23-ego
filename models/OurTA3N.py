@@ -54,6 +54,12 @@ class BaselineTA3N(nn.Module):
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
         
+        end_point = 'Temporal module'
+        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation, model_config=self.model_config)
+        in_features_dim = self.end_points[end_point].out_features_dim
+        if self._final_endpoint == end_point:
+            return
+
         if 'trn' in self.model_config.cop_type:
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
@@ -62,12 +68,6 @@ class BaselineTA3N(nn.Module):
             else:
                 end_point_name = 'copnet_trn_separate'
             self.end_points[end_point_name] = self.FullyConnectedLayer(in_features_dim, out_features_dim_copnet)
-        
-        end_point = 'Temporal module'
-        self.end_points[end_point] = self.TemporalModule(in_features_dim, self.train_segments, temporal_pooling=model_config.frame_aggregation, model_config=self.model_config)
-        in_features_dim = self.end_points[end_point].out_features_dim
-        if self._final_endpoint == end_point:
-            return
         
         if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.frame_aggregation == 'TemRelation':
             for i in range(self.train_segments-1):
