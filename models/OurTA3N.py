@@ -54,6 +54,7 @@ class BaselineTA3N(nn.Module):
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
+            raise UserWarning(f'{out_features_dim_copnet}, {self.permute_type}')
         
         if 'trn' in self.model_config.cop_type:
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
@@ -281,7 +282,6 @@ class BaselineTA3N(nn.Module):
             self.permutations = list(itertools.permutations([i for i in range(3)], r=3))
             self.fc_video = BaselineTA3N.FullyConnectedLayer(in_features_dim=self.n_relations*in_features_dim, out_features_dim=out_features_dim)
             
-        
         def forward(self, x):
             shape = x.shape
             x = x.view(-1, shape[-1])
