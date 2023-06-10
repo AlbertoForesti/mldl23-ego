@@ -231,7 +231,7 @@ class BaselineTA3N(nn.Module):
     def _permute(self, x, permute_type, sample_clips=3):
         shape = x.shape
         batch_size = x.shape[0]
-        permutations = list(itertools.permutations([i for i in range(3)], r=sample_clips))
+        permutations = list(itertools.permutations([i for i in range(sample_clips)], r=sample_clips))
 
         tmp = list(itertools.combinations(range(x.shape[1]), sample_clips))
         x_permuted = x[:,tmp[randint(0, len(tmp))],:] # sample x clips out of five
