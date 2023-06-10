@@ -136,11 +136,12 @@ class BaselineTA3N(nn.Module):
         if 'copnet' in self.end_points and is_train:
             permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
             permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
-            raise UserWarning(f'Predictions {labels_predictions_cop_source}\
-                              \nPermuted {source}\
-                              \nOriginal {permuted_source}')
             predictions_cop_source = self._modules['copnet'](permuted_source)
             predictions_cop_target = self._modules['copnet'](permuted_target)
+            raise UserWarning(f'Predictions {labels_predictions_cop_source}\
+                              \nPermuted {source}\
+                              \nOriginal {permuted_source}\
+                              \nPredictions {predictions_cop_source}')
         
         if 'copnet_trn_unified' in self.end_points:
             raise UserWarning(f'Should not be here')
