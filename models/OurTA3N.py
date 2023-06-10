@@ -50,6 +50,7 @@ class BaselineTA3N(nn.Module):
                 return
 
         if 'copnet' in self.model_config.cop_type:
+            
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
@@ -138,6 +139,7 @@ class BaselineTA3N(nn.Module):
             permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
             predictions_cop_source = self._modules['copnet'](permuted_source)
             predictions_cop_target = self._modules['copnet'](permuted_target)
+            raise UserWarning(f'labels {labels_predictions_cop_source}, preds {predictions_cop_source}')
         
         if 'copnet_trn_unified' in self.end_points:
             source, labels_predictions_cop_source = self._permute(source, self.permute_type)
