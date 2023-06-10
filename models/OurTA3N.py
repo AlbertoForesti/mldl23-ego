@@ -50,10 +50,12 @@ class BaselineTA3N(nn.Module):
 
         if 'copnet' in self.model_config.cop_type:
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
+            self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
         
         if 'trn' in self.model_config.cop_type:
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
+            self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             if 'unified' in self.model_config.cop_type:
                 end_point_name = 'copnet_trn_unified'
             else:
@@ -131,18 +133,18 @@ class BaselineTA3N(nn.Module):
         labels_predictions_cop_source = labels_predictions_cop_target = None
 
         if 'copnet' in self.end_points and is_train:
-            permuted_source, labels_predictions_cop_source = self._permute(source)
-            permuted_target, labels_predictions_cop_target = self._permute(target)
+            permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
+            permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
             predictions_cop_source = self._modules['copnet'](permuted_source)
             predictions_cop_target = self._modules['copnet'](permuted_target)
         
         if 'copnet_trn_unified' in self.end_points:
-            source, labels_predictions_cop_source = self._permute(source)
-            target, labels_predictions_cop_target = self._permute(target)
+            source, labels_predictions_cop_source = self._permute(source, self.permute_type)
+            target, labels_predictions_cop_target = self._permute(target, self.permute_type)
         
         if 'copnet_trn_sepate' in self.end_points and is_train:
-            permuted_source, labels_predictions_cop_source = self._permute(source)
-            permuted_target, labels_predictions_cop_target = self._permute(target)
+            permuted_source, labels_predictions_cop_source = self._permute(source, self.permute_type)
+            permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type)
             permuted_source, _ = self._modules['Temporal module'](source, num_segments)
             permuted_target, _ = self._modules['Temporal module'](target, num_segments)
             predictions_cop_source = self._modules['copnet_trn_sepate'](permuted_source)
@@ -365,7 +367,7 @@ class BaselineTA3N(nn.Module):
                 
             elif self.pooling_type == "TemPooling":
                 return self.tempooling(x, num_segments)
-            
+
             else:
                 raise NotImplementedError
                
