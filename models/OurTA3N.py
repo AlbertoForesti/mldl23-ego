@@ -152,6 +152,8 @@ class BaselineTA3N(nn.Module):
             permuted_target, labels_predictions_cop_target = self._permute(target, self.permute_type, sample_clips=self.model_config.cop_samples)
             permuted_source, _ = self._modules['Temporal module'](source, num_segments)
             permuted_target, _ = self._modules['Temporal module'](target, num_segments)
+            permuted_source = torch.sum(permuted_source, 1)
+            permuted_target = torch.sum(permuted_target, 1)
             predictions_cop_source = self._modules['copnet_trn_separate'](permuted_source)
             predictions_cop_target = self._modules['copnet_trn_separate'](permuted_target)
 
@@ -202,7 +204,6 @@ class BaselineTA3N(nn.Module):
             predictions_cop_source = self._modules['copnet_trn_unified'](source)
             if is_train:
                 predictions_cop_target = self._modules['copnet_trn_unified'](target)
-            raise UserWarning(f'shape {predictions_cop_source.shape}')
 
         if 'Gtd' in self.end_points and is_train:
             predictions_gtd_source = self._modules['Gtd'](source)
