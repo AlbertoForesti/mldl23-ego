@@ -239,7 +239,7 @@ class BaselineTA3N(nn.Module):
 
         if permute_type == 'simple':
             shift_mask = randint(0,2,batch_size)
-            permutation_vector = torch.Tensor([permutations[randint(0,len(permutations))] if i == 0 else [0, 1, 2] for i in shift_mask]).long().to(self.device)
+            permutation_vector = torch.Tensor([permutations[randint(0,len(permutations))] if i == 0 else [j for j in range(sample_clips)] for i in shift_mask]).long().to(self.device)
         else:
             shift_mask = randint(0,len(permutations),batch_size)
             permutation_vector = torch.Tensor([permutations[i] for i in shift_mask]).long().to(self.device)
