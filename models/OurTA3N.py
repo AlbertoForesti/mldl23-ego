@@ -62,7 +62,6 @@ class BaselineTA3N(nn.Module):
 
         if 'trn' in self.model_config.cop_type:
             out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
-            raise UserWarning(f'out features dim {out_features_dim_copnet}')
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             if 'unified' in self.model_config.cop_type:
                 end_point_name = 'copnet_trn_unified'
@@ -164,7 +163,8 @@ class BaselineTA3N(nn.Module):
         
         if 'copnet_trn_unified' in self.end_points:
             predictions_cop_source = self._modules['copnet_trn_unified'](source)
-            predictions_cop_target = self._modules['copnet_trn_unified'](target)
+            if is_train:
+                predictions_cop_target = self._modules['copnet_trn_unified'](target)
 
         if 'Grd' in self.model_config.blocks and self.model_config.frame_aggregation == 'TemRelation':
             predictions_grd_source = {}
