@@ -230,7 +230,7 @@ class BaselineTA3N(nn.Module):
         permutations = list(itertools.permutations([i for i in range(3)], r=sample_clips))
 
         tmp = list(itertools.combinations(range(x.shape[1]), sample_clips))
-        x_permuted = x[:,tmp[randint(0, len(tmp)-1)],:] # sample three clips out of five
+        x = x[:,tmp[randint(0, len(tmp)-1)],:] # sample three clips out of five
 
         if permute_type == 'simple':
             shift_mask = randint(0,2,batch_size)
@@ -242,9 +242,9 @@ class BaselineTA3N(nn.Module):
         permutation_vector = permutation_vector.unsqueeze(2)
         repeat_shape = torch.Size([1,1,shape[2]])
         permutation_vector = permutation_vector.repeat(repeat_shape)
-        x_permuted = torch.gather(x_permuted,1,permutation_vector)
+        x = torch.gather(x,1,permutation_vector)
         labels = torch.Tensor(shift_mask).long().to(self.device)
-        return x_permuted, labels
+        return x, labels
 
     class SpatialModule(nn.Module):
         def __init__(self, n_fcl, in_features_dim, out_features_dim, dropout=0.5):
