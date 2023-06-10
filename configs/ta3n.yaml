@@ -67,6 +67,6 @@ models:
     delta: 0.75
     attention: False
     batch_normalization: True
-    cop_type: 'copnet_simple'
+    cop_type: None
     cop_samples: 3
 
