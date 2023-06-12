@@ -50,7 +50,7 @@ class BaselineTA3N(nn.Module):
                 return
 
         if 'copnet' in self.model_config.cop_type:
-            out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples)
+            out_features_dim_copnet = 2 if 'simple' in self.model_config.cop_type else factorial(self.model_config.cop_samples, exact=True)
             self.permute_type = 'simple' if 'simple' in self.model_config.cop_type else 'complex'
             self.end_points['copnet'] = self.COPNet(in_features_dim, out_features_dim_copnet)
         
