@@ -97,7 +97,7 @@ class ActionRecognition(tasks.Task, ABC):
 
         return logits, features
     
-    def compute_loss(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor]):
+    def compute_loss(self, logits: torch.Tensor, class_label: torch.Tensor, features: Dict[str, torch.Tensor], iteration):
         classification_loss = self.criterion(logits, class_label) #cross entropy loss
 
         if 'Gsd' in self.model_args['RGB'].blocks:
@@ -170,8 +170,8 @@ class ActionRecognition(tasks.Task, ABC):
         
         # self.loss.update((torch.mean(classification_loss) - torch.mean(lambda_s*gsd_loss + lambda_t*gtd_loss) )/ (self.total_batch / self.batch_size), self.batch_size)
         # we need different losses to backpropagate to different parts of the network
-        
-        self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
+        if iteration > 5000:
+            self.classification_loss.update(torch.mean(classification_loss) / (self.total_batch / self.batch_size), self.batch_size)
     
 
     def attentive_entropy(self, pred, pred_domain):

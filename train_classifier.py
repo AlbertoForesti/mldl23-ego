@@ -219,7 +219,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
         
         logits = logits['RGB']
 
-        action_classifier.compute_loss(logits, source_label, features)
+        action_classifier.compute_loss(logits, source_label, features, iteration=i)
         action_classifier.backward(retain_graph=False)
         action_classifier.compute_accuracy(logits, source_label)
         action_classifier.wandb_log()
