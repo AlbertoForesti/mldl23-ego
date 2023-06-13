@@ -324,7 +324,7 @@ class BaselineTA3N(nn.Module):
             in the first fc layer the output dimension is the minimum between the input feature dimension and 1024"""
              # Again using the architecture of the official code
             if leaky_relu>0:
-                self.relu = nn.LeakyReLU(negative_slope=1)
+                self.relu = nn.LeakyReLU(negative_slope=100)
             else:
                 self.relu = nn.ReLU()
             self.dropout = nn.Dropout(p=dropout)
