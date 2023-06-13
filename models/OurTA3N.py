@@ -315,22 +315,30 @@ class BaselineTA3N(nn.Module):
             return order_preds_all
 
     class FullyConnectedLayer(nn.Module):
-        def __init__(self, in_features_dim, out_features_dim, dropout=0.5, residual=False):
+        def __init__(self, in_features_dim, out_features_dim, dropout=0.5, residual=False, xavier=False, leaky_relu = 0):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
             self.in_features_dim = in_features_dim
             self.out_features_dim = out_features_dim
             
             """Here I am doing what is done in the official code, 
             in the first fc layer the output dimension is the minimum between the input feature dimension and 1024"""
-            self.relu = nn.ReLU() # Again using the architecture of the official code
+             # Again using the architecture of the official code
+            if leaky_relu>0:
+                self.relu = nn.LeakyReLU(negative_slope=0.2)
+            else:
+                self.relu = nn.ReLU()
             self.dropout = nn.Dropout(p=dropout)
             self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
             self.bias = self.fc.bias
             self.weight = self.fc.weight
             self.residual = residual
             std = 0.001
-            normal_(self.fc.weight, 0, std)
-            constant_(self.fc.bias, 0)
+            if xavier:
+                torch.nn.init.xavier_uniform_(self.fc.weight, gain=1.0)
+                torch.nn.init.xavier_uniform_(self.fc.bias, gain=1.0)
+            else:
+                normal_(self.fc.weight, 0, std)
+                constant_(self.fc.bias, 0)
         
         def forward(self, x):
             if self.residual:
