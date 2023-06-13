@@ -67,7 +67,7 @@ class BaselineTA3N(nn.Module):
                 end_point_name = 'copnet_trn_unified'
             else:
                 end_point_name = 'copnet_trn_separate'
-            self.end_points[end_point_name] = self.FullyConnectedLayer(in_features_dim, out_features_dim_copnet)
+            self.end_points[end_point_name] = self.FullyConnectedLayer(in_features_dim, out_features_dim_copnet, residual=True)
         
         if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.frame_aggregation == 'TemRelation':
             for i in range(self.train_segments-1):
@@ -315,7 +315,7 @@ class BaselineTA3N(nn.Module):
             return order_preds_all
 
     class FullyConnectedLayer(nn.Module):
-        def __init__(self, in_features_dim, out_features_dim, dropout=0.5):
+        def __init__(self, in_features_dim, out_features_dim, dropout=0.5, residual=False):
             super(BaselineTA3N.FullyConnectedLayer, self).__init__()
             self.in_features_dim = in_features_dim
             self.out_features_dim = out_features_dim
@@ -327,11 +327,14 @@ class BaselineTA3N(nn.Module):
             self.fc = nn.Linear(self.in_features_dim, self.out_features_dim)
             self.bias = self.fc.bias
             self.weight = self.fc.weight
+            self.residual = residual
             std = 0.001
             normal_(self.fc.weight, 0, std)
             constant_(self.fc.bias, 0)
         
         def forward(self, x):
+            if self.residual:
+                return self.dropout(self.relu(x+self.fc(x)))
             x = self.fc(x)
             x = self.relu(x)
             x = self.dropout(x)
