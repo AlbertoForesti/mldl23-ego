@@ -217,6 +217,9 @@ class BaselineTA3N(nn.Module):
         
         feats_gy_source = self._modules['Gy'](source)
 
+        if is_train:
+            feats_gy_target = self.modules['Gy'](target)
+
         logits = self.fc_classifier_video(feats_gy_source)
         predictions_clf_source = logits
 
@@ -232,6 +235,7 @@ class BaselineTA3N(nn.Module):
                         "pred_grd_source": predictions_grd_source,"pred_grd_target": predictions_grd_target, \
                         "pred_cop_source": predictions_cop_source,"pred_cop_target": predictions_cop_target, \
                         "pred_clf_source": predictions_clf_source,"pred_clf_target": predictions_clf_target, \
+                        "feats_gy_source": feats_gy_source,"feats_gy_target": feats_gy_target, \
                         "label_cop_source": labels_predictions_cop_source,"label_cop_target": labels_predictions_cop_target}
 
     def _permute(self, x, permute_type, sample_clips=3):

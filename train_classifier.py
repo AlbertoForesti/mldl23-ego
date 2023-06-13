@@ -15,6 +15,8 @@ import os
 import models as model_list
 import tasks
 import wandb
+from tsen_torch import TorchTSNE as TSNE
+from matplotlib import pyplot as plt
 
 # global variables among training functions
 training_iterations = 0
@@ -251,6 +253,13 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
 
             action_classifier.save_model(real_iter, val_metrics['top1'], prefix=None)
             action_classifier.train(True)
+    feats_gy_source = features['feats_gy_source']
+    feats_gy_target = features['feats_gy_target']
+    src_tsne = TSNE(n_components=2).fit_transform(feats_gy_source)
+    trg_tsne = TSNE(n_components=2).fit_transform(feats_gy_target)
+    plt.scatter(src_tsne[:,0], src_tsne[:,1], c='red')
+    plt.scatter(trg_tsne[:,0],trg_tsne[:,1], c='blue')
+    plt.savefig("scatter.eps", format="eps")
 
 
 def validate(model, val_loader, device, it, num_classes):
