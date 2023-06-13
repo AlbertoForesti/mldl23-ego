@@ -67,7 +67,7 @@ class BaselineTA3N(nn.Module):
                 end_point_name = 'copnet_trn_unified'
             else:
                 end_point_name = 'copnet_trn_separate'
-            self.end_points[end_point_name] = self.FullyConnectedLayer(in_features_dim, out_features_dim_copnet, leaky_relu=True, xavier=True)
+            self.end_points[end_point_name] = self.FullyConnectedLayer(in_features_dim, out_features_dim_copnet, leaky_relu=True, xavier=False)
         
         if 'Grd' in self.model_config.blocks and 'Temporal module' in self.end_points and self.model_config.frame_aggregation == 'TemRelation':
             for i in range(self.train_segments-1):
