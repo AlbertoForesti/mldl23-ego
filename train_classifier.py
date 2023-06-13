@@ -15,7 +15,7 @@ import os
 import models as model_list
 import tasks
 import wandb
-from tsen_torch import TorchTSNE as TSNE
+from tsne_torch import TorchTSNE as TSNE
 from matplotlib import pyplot as plt
 
 # global variables among training functions
