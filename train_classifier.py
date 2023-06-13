@@ -259,7 +259,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
     trg_tsne = TSNE(n_components=2).fit_transform(feats_gy_target)
     plt.scatter(src_tsne[:,0], src_tsne[:,1], c='red')
     plt.scatter(trg_tsne[:,0],trg_tsne[:,1], c='blue')
-    plt.savefig("scatter.eps", format="eps")
+    plt.savefig(f"tsne_{args.dataset.shift}.eps", format="eps")
 
 
 def validate(model, val_loader, device, it, num_classes):
