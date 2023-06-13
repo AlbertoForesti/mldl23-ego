@@ -335,7 +335,7 @@ class BaselineTA3N(nn.Module):
             std = 0.001
             if xavier:
                 torch.nn.init.xavier_uniform_(self.fc.weight, gain=1.0)
-                torch.nn.init.xavier_uniform_(self.fc.bias, gain=1.0)
+                constant_(self.fc.bias, 0)
             else:
                 normal_(self.fc.weight, 0, std)
                 constant_(self.fc.bias, 0)
