@@ -136,7 +136,17 @@ def main():
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
 
         train(action_classifier, train_loader_source, train_loader_target, val_loader, device, num_classes)
-        logits, tmp = action_classifier.forward(dataset_src, dataset_trg)
+        dataloader_src = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
+                                                                       'train', args.dataset, None, None, None,
+                                                                       None, load_feat=True),
+                                                   batch_size=len(dataset_trg), shuffle=True,
+                                                   num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
+        dataloader_trg = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[-1], modalities,
+                                                                       'train', args.dataset, None, None, None,
+                                                                       None, load_feat=True),
+                                                   batch_size=len(dataset_trg), shuffle=True,
+                                                   num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
+        logits, tmp = action_classifier.forward(dataloader_src, dataloader_trg)
         features = {}
         for k, v in tmp.items():
             # features[k] = torch.mean(v.values())
