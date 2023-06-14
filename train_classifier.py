@@ -255,11 +255,13 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
             action_classifier.train(True)
     feats_gy_source = features['feats_gy_source']
     feats_gy_target = features['feats_gy_target']
-    src_tsne = TSNE(n_components=2).fit_transform(feats_gy_source)
-    trg_tsne = TSNE(n_components=2).fit_transform(feats_gy_target)
-    plt.scatter(src_tsne[:,0], src_tsne[:,1], c='red')
-    plt.scatter(trg_tsne[:,0],trg_tsne[:,1], c='blue')
-    plt.savefig(f"tsne_{args.dataset.shift}.eps", format="eps")
+    torch.save(feats_gy_source, f"feats_source_{args.dataset.shift}.pt")
+    torch.save(feats_gy_target, f"feats_target_{args.dataset.shift}.pt")
+    #src_tsne = TSNE(n_components=2).fit_transform(feats_gy_source)
+    #trg_tsne = TSNE(n_components=2).fit_transform(feats_gy_target)
+    #plt.scatter(src_tsne[:,0], src_tsne[:,1], c='red')
+    #plt.scatter(trg_tsne[:,0],trg_tsne[:,1], c='blue')
+    #plt.savefig(f"tsne_{args.dataset.shift}.eps", format="eps")
 
 
 def validate(model, val_loader, device, it, num_classes):
