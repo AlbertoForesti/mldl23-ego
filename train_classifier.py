@@ -95,6 +95,12 @@ def main():
         # notice, here it is multiplied by tot_batch/batch_size since gradient accumulation technique is adopted
         training_iterations = args.train.num_iter * (args.total_batch // args.batch_size)
         # all dataloaders are generated here
+        dataset_src = EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
+                                                                       'train', args.dataset, None, None, None,
+                                                                       None, load_feat=True)
+        dataset_trg = EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
+                                                                       'train', args.dataset, None, None, None,
+                                                                       None, load_feat=True)
         train_loader_source = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
                                                                        'train', args.dataset, None, None, None,
                                                                        None, load_feat=True),
@@ -130,6 +136,16 @@ def main():
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
 
         train(action_classifier, train_loader_source, train_loader_target, val_loader, device, num_classes)
+        logits, tmp = action_classifier.forward(dataset_src, dataset_trg)
+        features = {}
+        for k, v in tmp.items():
+            # features[k] = torch.mean(v.values())
+            features[k] = v['RGB']
+        feats_gy_source = features['feats_gy_source']
+        feats_gy_target = features['feats_gy_target']
+        torch.save(feats_gy_source, f"feats_source_all_{args.dataset.shift}.pt")
+        torch.save(feats_gy_target, f"feats_target_all_{args.dataset.shift}.pt")
+
 
     elif args.action == "validate":
         if args.resume_from is not None:
