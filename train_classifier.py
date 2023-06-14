@@ -139,14 +139,16 @@ def main():
         dataloader_src = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[0], modalities,
                                                                        'train', args.dataset, None, None, None,
                                                                        None, load_feat=True),
-                                                   batch_size=len(dataset_trg), shuffle=True,
+                                                   batch_size=len(dataset_src), shuffle=True,
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
         dataloader_trg = torch.utils.data.DataLoader(EpicKitchensDataset(args.dataset.shift.split("-")[-1], modalities,
                                                                        'train', args.dataset, None, None, None,
                                                                        None, load_feat=True),
                                                    batch_size=len(dataset_trg), shuffle=True,
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
-        logits, tmp = action_classifier.forward(dataloader_src, dataloader_trg)
+        source_data, source_label = next(iter(dataloader_src))['RGB'].to(device)
+        target_data, target_label = next(iter(dataloader_trg))['RGB'].to(device)
+        logits, tmp = action_classifier.forward(source_data, target_data)
         features = {}
         for k, v in tmp.items():
             # features[k] = torch.mean(v.values())
@@ -230,7 +232,7 @@ def train(action_classifier, train_loader_source, train_loader_target, val_loade
         # in case of multi-clip training one clip per time is processed
         for m in modalities:
             data_source[m] = source_data[m].to(device)
-            data_target[m]=target_data[m].to(device)
+            data_target[m] = target_data[m].to(device)
 
 
         if data_source is None or data_target is None :
