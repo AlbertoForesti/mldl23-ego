@@ -4,7 +4,6 @@ from utils.logger import logger
 import torch.nn.parallel
 import torch.optim
 from torch.utils.data import Subset
-
 import torch
 from utils.loaders import EpicKitchensDataset
 from utils.args import args
@@ -15,8 +14,6 @@ import os
 import models as model_list
 import tasks
 import wandb
-from tsne_torch import TorchTSNE as TSNE
-from matplotlib import pyplot as plt
 
 # global variables among training functions
 training_iterations = 0
