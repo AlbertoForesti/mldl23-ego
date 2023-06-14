@@ -218,7 +218,7 @@ class BaselineTA3N(nn.Module):
         feats_gy_source = self._modules['Gy'](source)
 
         if is_train:
-            feats_gy_target = self.modules['Gy'](target)
+            feats_gy_target = self._modules['Gy'](target)
 
         logits = self.fc_classifier_video(feats_gy_source)
         predictions_clf_source = logits
