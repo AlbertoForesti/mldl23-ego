@@ -146,8 +146,10 @@ def main():
                                                                        None, load_feat=True),
                                                    batch_size=len(dataset_trg), shuffle=True,
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
-        source_data, source_label = next(iter(dataloader_src))['RGB'].to(device)
+        source_data, source_label = next(iter(dataloader_src))
+        source_data = source_data['RGB'].to(device)
         target_data, target_label = next(iter(dataloader_trg))['RGB'].to(device)
+        target_data = target_data['RGB'].to(device)
         logits, tmp = action_classifier.forward(source_data, target_data)
         features = {}
         for k, v in tmp.items():
