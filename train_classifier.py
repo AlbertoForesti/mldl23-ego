@@ -150,7 +150,9 @@ def main():
         source_data = source_data['RGB'].to(device)
         target_data, target_label = next(iter(dataloader_trg))
         target_data = target_data['RGB'].to(device)
-        logits, tmp = action_classifier.forward(source_data, target_data)
+        data_source= {'RGB': source_data}
+        data_target= {'RGB': target_data}
+        logits, tmp = action_classifier.forward(data_source, data_target)
         features = {}
         for k, v in tmp.items():
             # features[k] = torch.mean(v.values())
